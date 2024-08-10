@@ -3,7 +3,7 @@
 
 '''
 Automated Edit of the Input file of CHIC    
-Created by Louis Müller (18.04.2024)
+Created by Louis Mueller (18.04.2024)
 
 Version (09.08.2024)
 
@@ -16,17 +16,10 @@ import re
 # Input
 # --------------------------------------------------------------------
 # Define the conditions and their respective values
-input_file = 'input.txt'  # Update this path as necessary
-parameter = 'M_E'  # You can adjust this based on the condition
+input_file = 'input.txt'  # edit name if necessary
+parameters = ['M_E','X_Fe']  # You can adjust this based on the condition
+section_name = ['Geometry', 'Perplex', 'Bnd_cond']
 
-conditions = {
-    'Condition1': 'NewValue1',
-    'Condition2': 'NewValue2',
-    'Condition3': 'NewValue3',
-}
-
-# Example section and parameter - adjust these as needed
-section_name = 'Geometry'
 #---------------------------------------------------------------------
 
 def update_parameter(input_file, section_name, parameter, new_value):
