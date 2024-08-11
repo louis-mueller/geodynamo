@@ -1,36 +1,55 @@
 #!/bin/bash
 
+# Version (11.08.2024), Louis Müller
+
+# Bash Script to automatically run a sequence of interior structure profile simulations with CHIC 
+# The code expects you to define a base directory from where you will run all operations (typically scratch/Simulations_xxx)
+# The Profiles are then run from the Profile directory which you can define (typically $base_dir/Prof)
+# In the base directory the program will expect you to have the Simulation directories defined as in conditions. 
+# If this is not the case it will make the necessary directory named in conditions.
+
 # Exit the script on any error
 set -e
 
-# Set your working directory and paths
+# Input
+#--------------------------------------------------------------------------------------
 base_dir="/scratch/Simulations_Louis"
 prof_dir="$base_dir/Prof"
 chic_executable="$base_dir/CHIC_070824"
 output_pattern="$prof_dir/data_prof_M*"
+save_old_input=0                                # if greater 0 the edited input is saved as a copy with the correct dir_name
+max_count=11                                     # change this value for the amount of simulations you would like to process
 count=0
-max_count=10 # change this value for the amount of simulations you would like to process
+last_size=0                                     # subsequent four definitions are used to check if the output file 
+stable_size=0                                   # is still being written into
+stable_time=0
+max_stable_time=180                             # Maximum time to wait for file stability in seconds
 
-
-# Define values for M_E and X_Fe for conditions
-# The strings are seperated by _ or = and the specific number is read.
 declare -A conditions
-conditions=(
-    ["M1_Fe30_sFe6-5_p"]="M_E=1_X_Fe=30"
-    ["M1_Fe60_sFe6-5_p"]="M_E=1_X_Fe=60"
-    ["M2_Fe30_sFe6-5_p"]="M_E=2_X_Fe=30"
-    ["M2_Fe60_sFe6-5_p"]="M_E=2_X_Fe=60"
-    ["M3_Fe30_sFe6-5_p"]="M_E=3_X_Fe=30"
-    ["M3_Fe60_sFe6-5_p"]="M_E=3_X_Fe=60"
-    ["M4_Fe30_sFe6-5_p"]="M_E=4_X_Fe=30"
-    ["M4_Fe60_sFe6-5_p"]="M_E=4_X_Fe=60"
-    ["M5_Fe30_sFe6-5_p"]="M_E=5_X_Fe=30"
-    ["M5_Fe60_sFe6-5_p"]="M_E=5_X_Fe=60"
+conditions=(                                    # conditions (right) of each directory name (left)
+    ["M1_Fe30_sFe6-5_p"]="M_E=1.0,X_Fe=30,Dl=100000.0,Dcr0=50000.0"      # Define values for M_E and X_Fe for conditions                                           
+    ["M1_Fe60_sFe6-5_p"]="M_E=1.0,X_Fe=60,Dl=100000.0,Dcr0=50000.0"   # The strings are seperated by "_" or "=" and the specific number is read.
+    ["M2_Fe30_sFe6-5_p"]="M_E=2.0,X_Fe=30,Dl=72146.0,Dcr0=36073.0"      # in the code: value =$(echo "$condition" | awk -F'[,=]' '{print $2}')
+    ["M2_Fe60_sFe6-5_p"]="M_E=2.0,X_Fe=60,Dl=72146.0,Dcr0=36073.0"     # fields (-F) are:     1 = 2 , 3  = 4
+    ["M3_Fe30_sFe6-5_p"]="M_E=3.0,X_Fe=30,Dl=59604.0,Dcr0=29802.0"      #                    "M_E=3.0,X_Fe=30"
+    ["M3_Fe60_sFe6-5_p"]="M_E=3.0,X_Fe=60,Dl=59604.0,Dcr0=29802.0"     
+    ["M4_Fe30_sFe6-5_p"]="M_E=4.0,X_Fe=30,Dl=52051.0,Dcr0=26026.0"
+    ["M4_Fe60_sFe6-5_p"]="M_E=4.0,X_Fe=60,Dl=52051.0,Dcr0=26026.0"
+    ["M5_Fe30_sFe6-5_p"]="M_E=5.0,X_Fe=30,Dl=46858.0,Dcr0=23429.0"
+    ["M5_Fe60_sFe6-5_p"]="M_E=5.0,X_Fe=60,Dl=46858.0,Dcr0=23429.0"
 )
+#--------------------------------------------------------------------------------------
 
-# Function to check if a value in string is an integer
-is_integer() {
-    [[ "$1" =~ ^-?[0-9]+$ ]]
+# Function to check if a variable is an integer or floating-point number and exits if not
+check_number() {
+    local value="$1" 
+    # Regular expression for a valid integer or floating-point number
+    if ! [[ "$value" =~ ^-?[0-9]*(\.[0-9]+)?$ ]]; then
+        echo "Error: '$value' is not a valid number."
+        exit 1
+    else 
+        echo "$value is a number."
+    fi
 }
 
 # Check if Prof directory exists
@@ -51,7 +70,7 @@ if [ -d "$prof_dir" ]; then
         echo "No files starting with 'data' found in $prof_dir."
     fi
 else
-    echo "Error: Prof directory does not exist."
+    echo "Error: The dirctory ($prof_dir) does not exist."
     exit 1
 fi
 
@@ -66,8 +85,8 @@ if [ -f "$prof_dir/input.txt" ]; then
             output_dir="$base_dir/$dir_name"
             echo "$outputdir"
 
-            if [ $count -gt 0 ]; then 
-                echo "our test count has reached its limit."
+            if [ $count -ge $max_count ]; then 
+                echo "Your test count has reached its limit."
                 exit 1
             fi
 
@@ -80,38 +99,40 @@ if [ -f "$prof_dir/input.txt" ]; then
             fi
             
             echo "Processing directory: $output_dir"
+
+            # Save the old input.txt file version (optional)
+            if [ $save_old_input -gt 0 ]; then
+                cp "$prof_dir/input.txt" "$prof_dir/input_IntStruct_before.txt"
+                echo "Earlier input.txt file saved as input_IntStruct_before.txt"
+            fi
             
             # Modify input.txt file based on the current condition
-            condition="${conditions[$dir_name]}"
+            echo "Updating input.txt '$dir_name': $condition"
 
-            m_e_val=$(echo "$condition" | awk -F'[_=]' '{print $3}')
-            x_fe_val=$(echo "$condition" | awk -F'[_=]' '{print $6}')
-
-            # Ensure that m_e_val and x_fe_val are integers
-            if ! is_integer "$m_e_val"; then
-                echo "Error: M_E value '$m_e_val' is not a valid integer."
-                exit 1
-            fi
-
-            if ! is_integer "$x_fe_val"; then
-                echo "Error: X_Fe value '$x_fe_val' is not a valid integer."
-                exit 1
-            fi
-            
-            echo "Updating input.txt with M_E=$m_e_val and X_Fe=$x_fe_val..."
-            awk -v m_e_val="$m_e_val" -v x_fe_val="$x_fe_val" '
+            # Use awk to update input.txt based on the condition
+            awk -v condition="${conditions[$dir_name]}" '
             BEGIN {
-                FS = "=";
-                OFS = "=";
+                # Initialize field separator and output field separator
+                FS="[ \t]*=[ \t]*";   # Handle possible spaces and tabs around "="
+                OFS="\t\t\t=\t\t";    # Set specific output structure 
+
+                # Split the condition into parameter-value pairs
+                split(condition, pairs, ",");
+                for (i in pairs) {
+                    split(pairs[i], kv, "=");
+                    params[kv[1]] = kv[2];
+                }
             }
-            # Match lines with M_E and X_Fe, allowing for any amount of whitespace
-            /^\s*M_E\s*=/ { $2 = m_e_val }
-            /^\s*X_Fe\s*=/ { $2 = x_fe_val }
-            { print }
+            {
+                # Check and update fields based on the parameters
+                if ($1 in params) {
+                    $2 = params[$1];
+                }
+                print $0;
+            }
             ' "$prof_dir/input.txt" > "$prof_dir/input_temp.txt" && mv "$prof_dir/input_temp.txt" "$prof_dir/input.txt"
 
-            # Save the modified input.txt file (optional)
-            cp "$prof_dir/input.txt" "$prof_dir/input_IntStruct_$dir_name.txt"
+            echo "finished editing input.txt for $dir_name"
             
             # Change to Prof directory
             cd "$prof_dir" || exit
@@ -127,13 +148,9 @@ if [ -f "$prof_dir/input.txt" ]; then
                 echo "No matching files found."
                 exit 1
             fi
-
             echo "Found output file: $output_file"
-            last_size=0
-            stable_size=0
-            stable_time=0
-            max_stable_time=180  # Maximum time to wait for file stability in seconds
-
+            
+            # --------code segment checks if output file is still being written into-----------------------------
             while true; do
                 current_size=$(stat -c%s "$output_file" 2>/dev/null || echo 0)
                 if [ "$current_size" -eq "$last_size" ]; then
@@ -156,6 +173,7 @@ if [ -f "$prof_dir/input.txt" ]; then
                 sleep 10
                 stable_time=$((stable_time + 10))
             done
+            #-----------------------------------------------------------------------------------------------------
 
             # Check if output file exists and copy it
             if [ -f "$output_file" ]; then
