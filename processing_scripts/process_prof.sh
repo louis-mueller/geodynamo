@@ -1,12 +1,21 @@
 #!/bin/bash
 
-# Version (11.08.2024), Louis Müller
+# Processing of Interior Structure Simulations 
+# Created by Louis Müller (11.08.2024)
 
-# Bash Script to automatically run a sequence of interior structure profile simulations with CHIC 
+# Version (12.08.2024)
+
+# Summary:
+# Bash Script to automatically run a sequence of interior structure simulations with CHIC. 
 # The code expects you to define a base directory from where you will run all operations (typically scratch/Simulations_xxx)
 # The Profiles are then run from the Profile directory which you can define (typically $base_dir/Prof)
 # In the base directory the program will expect you to have the Simulation directories defined as in conditions. 
 # If this is not the case it will make the necessary directory named in conditions.
+
+# Dependancies: python3, os, sys, matplotlib, numpy, and scipy.
+# Make sure you have a working version of the CHIC executable and, 
+# if you want to use Perple_X, a directory called: 
+# "Composition_Final_MORE_FEO" both in your base directory.
 
 # Exit the script on any error
 set -e
@@ -17,40 +26,42 @@ base_dir="/scratch/Simulations_Louis"
 prof_dir="$base_dir/Prof"
 chic_executable="$base_dir/CHIC_070824"
 output_pattern="$prof_dir/data_prof_M*"
-save_old_input=0                                # if greater 0 the edited input is saved as a copy with the correct dir_name
-max_count=11                                     # change this value for the amount of simulations you would like to process
-count=0
-last_size=0                                     # subsequent four definitions are used to check if the output file 
-stable_size=0                                   # is still being written into
-stable_time=0
-max_stable_time=180                             # Maximum time to wait for file stability in seconds
+save_old_input=0                                    # if greater 0 the edited input is saved as a copy with the correct dir_name
+max_count=10                                        # change this value for the amount of simulations you would like to process
+plot_output=1                                       # if greater 0 plotting (eg. visu_profs.py) code is run as well
+plot_dir="/home/louismueller/bin/visu_profs.py"     # path to plotting code 
+OUTPUT_FILE_NAME="all_sim_IntStruct_120824.svg"     # passed to plotting code 
 
-declare -A conditions
-conditions=(                                    # conditions (right) of each directory name (left)
-    ["M1_Fe30_sFe6-5_p"]="M_E=1.0,X_Fe=30,Dl=100000.0,Dcr0=50000.0"      # Define values for M_E and X_Fe for conditions                                           
-    ["M1_Fe60_sFe6-5_p"]="M_E=1.0,X_Fe=60,Dl=100000.0,Dcr0=50000.0"   # The strings are seperated by "_" or "=" and the specific number is read.
-    ["M2_Fe30_sFe6-5_p"]="M_E=2.0,X_Fe=30,Dl=72146.0,Dcr0=36073.0"      # in the code: value =$(echo "$condition" | awk -F'[,=]' '{print $2}')
-    ["M2_Fe60_sFe6-5_p"]="M_E=2.0,X_Fe=60,Dl=72146.0,Dcr0=36073.0"     # fields (-F) are:     1 = 2 , 3  = 4
-    ["M3_Fe30_sFe6-5_p"]="M_E=3.0,X_Fe=30,Dl=59604.0,Dcr0=29802.0"      #                    "M_E=3.0,X_Fe=30"
-    ["M3_Fe60_sFe6-5_p"]="M_E=3.0,X_Fe=60,Dl=59604.0,Dcr0=29802.0"     
-    ["M4_Fe30_sFe6-5_p"]="M_E=4.0,X_Fe=30,Dl=52051.0,Dcr0=26026.0"
-    ["M4_Fe60_sFe6-5_p"]="M_E=4.0,X_Fe=60,Dl=52051.0,Dcr0=26026.0"
-    ["M5_Fe30_sFe6-5_p"]="M_E=5.0,X_Fe=30,Dl=46858.0,Dcr0=23429.0"
-    ["M5_Fe60_sFe6-5_p"]="M_E=5.0,X_Fe=60,Dl=46858.0,Dcr0=23429.0"
+dir_strs=(
+    "M1_Fe30_sFe6-5_p" "M1_Fe60_sFe6-5_p" "M2_Fe30_sFe6-5_p" "M2_Fe60_sFe6-5_p"
+    "M3_Fe30_sFe6-5_p" "M3_Fe60_sFe6-5_p" "M4_Fe30_sFe6-5_p" "M4_Fe60_sFe6-5_p"
+    "M5_Fe30_sFe6-5_p" "M5_Fe60_sFe6-5_p"
+)                                                   # dir_strs are passed to plotting code later as well 
+
+param_cond=(
+    "M_E=1.0,X_Fe=30,Dl=100000.0,Dcr0=50000.0" "M_E=1.0,X_Fe=60,Dl=100000.0,Dcr0=50000.0"
+    "M_E=2.0,X_Fe=30,Dl=72146.0,Dcr0=36073.0" "M_E=2.0,X_Fe=60,Dl=72146.0,Dcr0=36073.0"
+    "M_E=3.0,X_Fe=30,Dl=59604.0,Dcr0=29802.0" "M_E=3.0,X_Fe=60,Dl=59604.0,Dcr0=29802.0"
+    "M_E=4.0,X_Fe=30,Dl=52051.0,Dcr0=26026.0" "M_E=4.0,X_Fe=60,Dl=52051.0,Dcr0=26026.0"
+    "M_E=5.0,X_Fe=30,Dl=46858.0,Dcr0=23429.0" "M_E=5.0,X_Fe=60,Dl=46858.0,Dcr0=23429.0" 
 )
-#--------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
 
-# Function to check if a variable is an integer or floating-point number and exits if not
-check_number() {
-    local value="$1" 
-    # Regular expression for a valid integer or floating-point number
-    if ! [[ "$value" =~ ^-?[0-9]*(\.[0-9]+)?$ ]]; then
-        echo "Error: '$value' is not a valid number."
-        exit 1
-    else 
-        echo "$value is a number."
-    fi
-}
+# Check if the number of directories matches the number of conditions
+if [ ${#dir_strs[@]} -ne ${#param_cond[@]} ]; then
+    echo "Error: The number of directory strings does not match the number of parameter conditions."
+    exit 1
+fi
+
+# Create an associative array to hold the key-value pairs
+declare -A conditions
+
+# Populate the associative array
+for i in "${!dir_strs[@]}"; do
+    dir="${dir_strs[$i]}"
+    param="${param_cond[$i]}"
+    conditions["$dir"]="$param"
+done
 
 # Check if Prof directory exists
 if [ -d "$prof_dir" ]; then
@@ -80,14 +91,28 @@ if [ -f "$prof_dir/input.txt" ]; then
 
     # Check if CHIC executable exists in the base directory
     if [ -x "$chic_executable" ]; then
+
+        DIR_STRS=""
+        count=0
         # Loop through each condition
-        for dir_name in "${!conditions[@]}"; do
+        for dir_name in "${dir_strs[@]}"; do
+            
+            data_files=$(find "$prof_dir" -maxdepth 1 -type f -name 'data*')
+
+            if [ -n "$data_files" ]; then
+                # Process each file individually
+                while IFS= read -r file; do
+                    rm "$file"
+                done <<< "$data_files"
+            fi
+
+            param="${conditions[$dir_name]}"
             output_dir="$base_dir/$dir_name"
             echo "$outputdir"
 
             if [ $count -ge $max_count ]; then 
                 echo "Your test count has reached its limit."
-                exit 1
+                break
             fi
 
             # Check if output directory exists
@@ -107,10 +132,10 @@ if [ -f "$prof_dir/input.txt" ]; then
             fi
             
             # Modify input.txt file based on the current condition
-            echo "Updating input.txt '$dir_name': $condition"
+            echo "Updating input.txt '$dir_name': '$param'"
 
             # Use awk to update input.txt based on the condition
-            awk -v condition="${conditions[$dir_name]}" '
+            awk -v condition=$param '
             BEGIN {
                 # Initialize field separator and output field separator
                 FS="[ \t]*=[ \t]*";   # Handle possible spaces and tabs around "="
@@ -149,31 +174,6 @@ if [ -f "$prof_dir/input.txt" ]; then
                 exit 1
             fi
             echo "Found output file: $output_file"
-            
-            # --------code segment checks if output file is still being written into-----------------------------
-            while true; do
-                current_size=$(stat -c%s "$output_file" 2>/dev/null || echo 0)
-                if [ "$current_size" -eq "$last_size" ]; then
-                    stable_size=$((stable_size + 1))
-                else
-                    stable_size=0
-                fi
-
-                if [ "$stable_size" -gt 5 ]; then
-                    echo "$output_file has stabilized."
-                    break
-                fi
-
-                if [ "$stable_time" -ge "$max_stable_time" ]; then
-                    echo "Error: $output_file did not stabilize within $max_stable_time seconds."
-                    exit 1
-                fi
-
-                last_size=$current_size
-                sleep 10
-                stable_time=$((stable_time + 10))
-            done
-            #-----------------------------------------------------------------------------------------------------
 
             # Check if output file exists and copy it
             if [ -f "$output_file" ]; then
@@ -185,6 +185,16 @@ if [ -f "$prof_dir/input.txt" ]; then
             fi
 
             echo "Processing for directory $output_dir complete." 
+
+            # Check if plotting is enabled
+            if [ $plot_output -gt 0 ]; then
+                # If DIR_STRS is not empty, append a comma before adding the new value
+                if [ -n "$DIR_STRS" ]; then
+                    DIR_STRS+=","
+                fi
+                # Append the current dir_str to DIR_STRS
+                DIR_STRS+="$dir_name"
+            fi
 
             count=$(($count + 1)) # counts the amount of directories processed
         
@@ -203,4 +213,26 @@ else
     exit 1
 fi
 
-echo "All directories processed successfully."
+if [ $plot_output -gt 0 ]; then
+    echo "Plotting started..."
+
+    # Check if input file exists in Prof directory
+    if [ -f "$plot_dir" ]; then
+        echo "Python plotting script found. Processing..."
+
+        MAX_COUNT=$max_count
+
+        echo "Directories passed to plotting script: $DIR_STRS"
+        echo "Output file name passed to plotting script: $OUTPUT_FILE_NAME"
+        echo "Upper limit of processed Directories passed to plotting script: $MAX_COUNT"
+
+        # Call the Python script and passes the correct arguments
+        python3 $plot_dir "$DIR_STRS" "$OUTPUT_FILE_NAME" "$MAX_COUNT"
+    else 
+        echo "Error: File at $plot_dir was not found"
+        exit 1
+    fi
+
+fi
+
+echo "All directories processed successfully." 

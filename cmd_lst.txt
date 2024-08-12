@@ -1,1 +1,1 @@
-scp louismueller@thor.planet.fu-berlin.de:/scratch/Simulations_Louis/Plots/* .\Documents\git\plots\
+scp louismueller@thor.planet.fu-berlin.de:/scratch/Simulations_Louis/Plots/* .\Documents\plots\
