@@ -3,6 +3,7 @@
 The code is written and updated so far exclusivly by Louis Müller (12.08.2024)
 
 Dependancies for visu_profs.py and process_profs.sh: python3, os, sys, matplotlib, numpy, and scipy.
+
 Make sure you have a working version of the CHIC executable and, if you want to use Perple_X (Connolly 2005), 
 a directory called: "Composition_Final_MORE_FEO" (Balduin 2024) containing the phase data both in your base directory.
 
