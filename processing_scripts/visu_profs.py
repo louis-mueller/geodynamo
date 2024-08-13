@@ -1,4 +1,4 @@
-# PyVis-CHIC_profs_res.py
+# visu_profs.py
 # -*- coding: utf-8 -*-
 
 '''
