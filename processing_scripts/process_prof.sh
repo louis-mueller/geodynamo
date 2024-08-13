@@ -216,7 +216,7 @@ fi
 if [ $plot_output -gt 0 ]; then
     echo "Plotting started..."
 
-    # Check if input file exists in Prof directory
+    # Check if plotting file (eg. visu_profs.py) exists in Prof directory
     if [ -f "$plot_dir" ]; then
         echo "Python plotting script found. Processing..."
 
@@ -226,7 +226,7 @@ if [ $plot_output -gt 0 ]; then
         echo "Output file name passed to plotting script: $OUTPUT_FILE_NAME"
         echo "Upper limit of processed Directories passed to plotting script: $MAX_COUNT"
 
-        # Call the Python script and passes the correct arguments
+        # Call the plotting file (eg. visu_profs.py) and passes the correct arguments
         python3 $plot_dir "$DIR_STRS" "$OUTPUT_FILE_NAME" "$MAX_COUNT"
     else 
         echo "Error: File at $plot_dir was not found"
