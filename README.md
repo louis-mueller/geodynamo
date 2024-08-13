@@ -41,3 +41,4 @@ After setting up all directories and configurations, you can execute the bash sc
 - Add stable legend positioning when PREM is set to TRUE.
 - Add additional arguments to be passed from the bash script to visu_profs.py.
 - Continue testing edge cases for margin use.
+- Add a better routine for saving previous input.txt files 
