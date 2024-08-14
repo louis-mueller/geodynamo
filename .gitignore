@@ -1,0 +1,6 @@
+# Ignore directories named core anywhere in the repository
+core/
+
+# Ignore all text and .res files.
+*.txt
+*.res
