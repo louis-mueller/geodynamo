@@ -58,7 +58,8 @@ After setting up all directories and configurations, you can execute the bash sc
 
 ### ToDo
 - Add another Input_var (On/OFF) that lets you just plot, and does not create new profs.res files
-- Add stable legend positioning when PREM is set to TRUE.
+- Add a color map Input_var that discretizes a contious pallete (flexible coloring).
+- Add stable legend positioning when PREM is set to TRUE (flexible Legend).
 - Add additional arguments to be passed from the bash script to visu_profs.py.
+- Add a better routine for saving previous input.txt files
 - Continue testing edge cases for margin use.
-- Add a better routine for saving previous input.txt files 
