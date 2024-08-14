@@ -38,6 +38,7 @@ After setting up all directories and configurations, you can execute the bash sc
 ```
 
 ### ToDo
+- Add another Input_var (On/OFF) that lets you just plot, and does not create new profs.res files
 - Add stable legend positioning when PREM is set to TRUE.
 - Add additional arguments to be passed from the bash script to visu_profs.py.
 - Continue testing edge cases for margin use.
