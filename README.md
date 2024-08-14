@@ -15,6 +15,25 @@ Python Environment Requirements:
 - numpy
 - scipy
 
+### Summary process_profs.sh
+Bash Script to automatically run a sequence of interior structure simulations with CHIC. 
+The code expects you to define a base directory from where you will run all operations (typically scratch/Simulations_xxx)
+The Profiles are then run from the Profile directory which you can define (typically $base_dir/Prof)
+In the base directory the program will expect you to have the Simulation directories defined as in conditions. 
+If this is not the case it will make the necessary directory named in conditions.
+
+Dependancies: python3, os, sys, matplotlib, numpy, and scipy.
+Make sure you have a working version of the CHIC executable and, 
+if you want to use Perple_X, a directory called: 
+"Composition_Final_MORE_FEO" both in your base directory.
+
+### Summary visu_profs.py
+Run This program in the base directory as `python3 visu_profs.py "DIR_STRS" "OUTPUT_FILE_NAME" "MAX_COUNT"`
+Any MAX_COUNT of directories named as listed in DIR_STRS containing a file named INT_STRUCT_DATA (e.g., profs.res), 
+with the data stored in columns, are plotted in a pre defined configuration of Subplots. 
+The color is chosen by a letter snippet defining the planet mass (M), and three further snippets can 
+be defined in ID to differentiate simulations accordingly.
+
 ### Setup
 The code was initially developed on a Windows system, which may lead to issues with line endings. To convert line endings from Windows to Unix format, run:
 ```
