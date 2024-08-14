@@ -20,23 +20,26 @@
 # Exit the script on any error
 set -e
 
+# Define current date in DDMMYYYY format
+current_date=$(date +"%d%m%Y")
+
 # Input
 #--------------------------------------------------------------------------------------
 base_dir="/scratch/Simulations_Louis"
 prof_dir="$base_dir/Prof"
 chic_executable="$base_dir/CHIC_070824"
 output_pattern="$prof_dir/data_prof_M*"
-save_old_input=0                                    # if greater 0 the edited input is saved as a copy with the correct dir_name
-max_count=10                                        # change this value for the amount of simulations you would like to process
-plot_output=1                                       # if greater 0 plotting (eg. visu_profs.py) code is run as well
-plot_dir="/home/louismueller/bin/visu_profs.py"     # path to plotting code 
-OUTPUT_FILE_NAME="all_sim_IntStruct_120824.svg"     # passed to plotting code 
+save_old_input=0                                            # if greater 0 the edited input is saved as a copy with the correct dir_name
+max_count=1                                                 # change this value for the amount of simulations you would like to process
+plot_output=1                                               # if greater 0 plotting (eg. visu_profs.py) code is run as well
+plot_dir="/home/louismueller/bin/visu_profs.py"             # path to plotting code 
+OUTPUT_FILE_NAME="sim_IntStruct_${current_date}.svg"        # passed to plotting code 
 
 dir_strs=(
     "M1_Fe30_sFe6-5_p" "M1_Fe60_sFe6-5_p" "M2_Fe30_sFe6-5_p" "M2_Fe60_sFe6-5_p"
     "M3_Fe30_sFe6-5_p" "M3_Fe60_sFe6-5_p" "M4_Fe30_sFe6-5_p" "M4_Fe60_sFe6-5_p"
     "M5_Fe30_sFe6-5_p" "M5_Fe60_sFe6-5_p"
-)                                                   # dir_strs are passed to plotting code later as well 
+)                                                           # dir_strs are passed to plotting code later as well 
 
 param_cond=(
     "M_E=1.0,X_Fe=30,Dl=100000.0,Dcr0=50000.0" "M_E=1.0,X_Fe=60,Dl=100000.0,Dcr0=50000.0"
@@ -46,6 +49,8 @@ param_cond=(
     "M_E=5.0,X_Fe=30,Dl=46858.0,Dcr0=23429.0" "M_E=5.0,X_Fe=60,Dl=46858.0,Dcr0=23429.0" 
 )
 #----------------------------------------------------------------------------------------
+
+echo "Starting Processing of Interior Structure Simulations: process_prof.sh..."
 
 # Check if the number of directories matches the number of conditions
 if [ ${#dir_strs[@]} -ne ${#param_cond[@]} ]; then
@@ -160,7 +165,7 @@ if [ -f "$prof_dir/input.txt" ]; then
             echo "finished editing input.txt for $dir_name"
             
             # Change to Prof directory
-            cd "$prof_dir" || exit
+            cd "$prof_dir" || exit 1
 
             # Run CHIC program
             "$chic_executable"
@@ -203,7 +208,7 @@ if [ -f "$prof_dir/input.txt" ]; then
         echo "CHIC executed successfully $count time*s."
 
         # Navigate back to the base directory
-        cd "$base_dir" || exit
+        cd "$base_dir" || exit 1
     else
         echo "Error: CHIC executable not found in $base_dir."
         exit 1
@@ -216,7 +221,7 @@ fi
 if [ $plot_output -gt 0 ]; then
     echo "Plotting started..."
 
-    # Check if plotting file (eg. visu_profs.py) exists in Prof directory
+    # Check if input file exists in Prof directory
     if [ -f "$plot_dir" ]; then
         echo "Python plotting script found. Processing..."
 
@@ -226,7 +231,7 @@ if [ $plot_output -gt 0 ]; then
         echo "Output file name passed to plotting script: $OUTPUT_FILE_NAME"
         echo "Upper limit of processed Directories passed to plotting script: $MAX_COUNT"
 
-        # Call the plotting file (eg. visu_profs.py) and passes the correct arguments
+        # Call the Python script and passes the correct arguments
         python3 $plot_dir "$DIR_STRS" "$OUTPUT_FILE_NAME" "$MAX_COUNT"
     else 
         echo "Error: File at $plot_dir was not found"
