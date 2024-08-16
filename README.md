@@ -20,12 +20,9 @@ Bash Script to automatically run a sequence of interior structure simulations wi
 The code expects you to define a base directory from where you will run all operations (typically scratch/Simulations_xxx)
 The Profiles are then run from the Profile directory which you can define (typically $base_dir/Prof)
 In the base directory the program will expect you to have the Simulation directories defined as in conditions. 
-If this is not the case it will make the necessary directory named in conditions.
-
-Dependancies: python3, os, sys, matplotlib, numpy, and scipy.
+If this is not the case it will make the necessary directory named in conditions. 
 Make sure you have a working version of the CHIC executable and, 
-if you want to use Perple_X, a directory called: 
-"Composition_Final_MORE_FEO" both in your base directory.
+if you want to use Perple_X, a directory called: "Composition_Final_MORE_FEO" both in your base directory.
 
 ### Summary visu_profs.py
 Run This program in the base directory as `python3 visu_profs.py "DIR_STRS" "OUTPUT_FILE_NAME" "MAX_COUNT"`
