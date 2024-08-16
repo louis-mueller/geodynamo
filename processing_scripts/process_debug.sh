@@ -15,7 +15,7 @@ base_dir="/scratch/Simulations_Louis"
 chic_executable="/home/louismueller/git/chic_v2/bin/CHIC"     # Replace with the actual path to CHIC executable
 debug_dir="$base_dir/Debug"                                   # Directory where the simulations will be run should contain input.txt and prof.res (for M1_Fe30_sFe6-5_p)
 delete_data_files=1                                           # If greater than 0, files starting with 'data' and a few others will be deleted
-make_chic=0                                                   # If greater than 0, CHIC will be compiled
+make_chic=1                                                   # If greater than 0, CHIC will be compiled
 
 #--------------------------------------------------------------------------------------
 

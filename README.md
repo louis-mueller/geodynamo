@@ -34,7 +34,13 @@ with the data stored in columns, are plotted in a pre defined configuration of S
 The color is chosen by a letter snippet defining the planet mass (M), and three further snippets can 
 be defined in ID to differentiate simulations accordingly.
 
+### Summary process_debug.sh
+This script is used to streamline the CHIC testing and debugging workflow.
+It can remove previous files in the Debug directory, can compile CHIC, 
+copies the executable to the simulation directory, and runs CHIC.
+
 ### Setup
+The set up code describes process_profs.sh but can be used for other bash scripts as well.
 The code was initially developed on a Windows system, which may lead to issues with line endings. To convert line endings from Windows to Unix format, run:
 ```
 dos2unix ./process_profs.sh
