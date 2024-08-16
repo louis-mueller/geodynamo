@@ -48,14 +48,23 @@ if [ -d "$debug_dir" ]; then
     echo "Debug directory found. Checking for files starting with 'data'..."
 
     data_files=$(find "$debug_dir" -maxdepth 1 -type f -name 'data*')
-
+    fort_files=$(find "$debug_dir" -maxdepth 1 -type f -name 'fort*')
+    result_files=$(find "$debug_dir" -maxdepth 1 -type f -name 'all_results**')
+    
     # Remove all previous data files
     if [[ -n "$data_files" && "$delete_data_files" -gt 0 ]]; then
 
         cd "$debug_dir" || exit 1
 
-        # removing other irrelevant non-datafiles:
-        rm -r ./fort* -r ./all_results*
+        if [[ -n "$fort_files" ]]; then
+            echo "Removing other irrelevant non-datafiles:"
+            rm -r ./fort* 
+        fi
+
+        if [[ -n "$result_files" ]]; then
+            echo "Removing other irrelevant non-datafiles:"
+            rm -r ./all_results* 
+        fi
 
         echo "Removing files starting with 'data' in $(pwd):"
     
