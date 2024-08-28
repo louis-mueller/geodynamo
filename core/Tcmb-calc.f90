@@ -1,3 +1,11 @@
+!real(dp)::rb,rtc,Tb,Tc,km,rhom,rhoc,Hm                     ! dimensionalized variables
+      !real(dp)::cm0,cc0,cm1,cc1                                  ! integration constants
+      !integer,parameter::n_la=5
+      !integer::ipiv(n_la),info
+      !double precision, dimension(n_la,n_la)::A                  ! linear system variables
+      !double precision, dimension(n_la)::b
+
+
 ! Block 5 - Updated Core Mantle Boundary Temperature Tc
       !--------------------------------------------------------------------------------------
       ! ToDo: find the correct definitions of rb, rc, Tb, Ttc, km, kc, rhom, Hm, rhoc, Hc.
@@ -74,3 +82,60 @@
         end do
       end subroutine core_write
       !-------------------------------------------------------------------------------------
+
+
+
+      function QS_func(r,rho,Cp,T,T_before,dt) result(Q_S)
+        real(dp),allocatable,intent(in)::r(:),rho(:),Cp(:),T(:),T_before(:)
+        real(dp),intent(in)::dt
+        real(dp)::Q_S,pi_
+        real(dp),allocatable::qs(:)
+  
+        pi_ = acos(-1.0_dp)
+  
+        qs = r**2.0_dp*rho*Cp*(T-T_before)
+  
+        Q_S = midpoint_integration(r,qs)*4*pi_/dt
+      end function QS_func
+  
+      function QL_func(ri,ri_before,L_H,rhoi,dt) result(Q_L)
+        real(dp),intent(in)::L_H,ri_before,ri,rhoi,dt
+        real(dp)::Q_L, pi_, dri
+  
+        pi_ = acos(-1.0_dp)
+  
+        dri = ri - ri_before
+  
+        Q_L = 4*pi_*ri**2.0_dp*L_H*rhoi*dri/dt
+      end function QL_func
+  
+      function QR_func(r,rho,H,dt) result(Q_R)
+        real(dp),allocatable,intent(in)::r(:),rho(:)
+        real(dp),intent(in)::H,dt
+        real(dp),allocatable::qr(:)
+        real(dp)::Q_R, pi_
+  
+        pi_ = acos(-1.0_dp)
+  
+        qr = rho*H*r**2
+  
+        Q_R = midpoint_integration(r,qr)*4*pi_/dt
+      end function QR_func
+  
+      function QP_func(r,alpha,T,PT,Ttc,Ttc_old,dr,dt) result(Q_P)
+        real(dp),allocatable,intent(in)::r(:),alpha(:),T(:)
+        real(dp),intent(in)::PT,Ttc,Ttc_old,dr,dt
+        real(dp)::Q_P,pi_
+        real(dp),allocatable::qp(:)
+  
+        pi_ = acos(-1.0_dp)
+  
+        qp = r**2.0_dp*alpha*T
+  
+        Q_P = midpoint_integration(r,qp)*4.0_dp*pi_*PT*(Ttc-Ttc_old)/(dt*dr)
+      end function QP_func
+
+      !core%QS = QS_func(core%r,core%rho,core%Cp,core%T,core%T_old,dt)/1.0e12_dp ! W to TW
+      !core%QL = QL_func(core%ri,core%ri_old,core%LH,core%rhoi,dt)/1.0e12_dp
+      !core%QR = QR_func(core%r,core%rho,core%Hc,dt)
+      !core%QP = QP_func(core%r,core%alpha,core%T,core%PT,core%Tc,core%Tc_old,core%dr,dt)/1.0e12_dp

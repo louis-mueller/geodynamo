@@ -8,7 +8,6 @@ module core
   implicit none
 
   type core_properties
-    ! note: the subscript old denotes the previous time step
     integer::n                                  ! core resolution
     real(dp)::dr  !m                            ! core radius step size (n dependant)
     real(dp)::ri  !m                            ! radius of the inner core
@@ -26,15 +25,14 @@ module core
     real(dp)::LH  !J/kg                         ! latent heat of iron crystallization
     real(dp)::PT                                ! numerical coeff. to relate pressure change at ICB to core cooling (=1.0_dp?)
     real(dp)::kc  !W/(m*K)                      ! thermal conductivity of the core
-    real(dp)::rhoi  !kg/m^3                     ! density of the inner core
+    real(dp)::gi  !m/s^2                        ! gravity at the inner core
     real(dp)::Tb  !K                            ! temperature above core-mantle boundary
-    real(dp)::Tc    !K                          ! temperature at the core-mantle boundary
-    real(dp)::Ttc  !K                           ! temperature at the bottom of the core TBL
-    real(dp),allocatable::T_old(:) !K  
-    real(dp)::Tb_old !K
-    real(dp)::Tc_old  !K                      
-    real(dp)::ri_old !m    
-    real(dp)::QR,QL,QS,QP,QCMB  ! W             ! heat fluxes (out of the core)                
+    real(dp)::Tc  !K                            ! temperature at the core-mantle boundary
+    real(dp)::Tc_old !K                         ! temperature at the core-mantle boundary at the previous time step
+    real(dp)::Ti  !K                            ! pure iron melting temperature
+    real(dp)::dTm_dp !K/Pa                      ! derivative of the pure iron melting temperature with respect to pressure
+    real(dp)::dT_dp !K/Pa                       ! derivative of the core temperature with respect to pressure   
+    real(dp)::QR,QL,QS,QP,QCMB,QT  ! W          ! heat fluxes (out of the core)                
   end type core_properties
 
   contains
@@ -157,56 +155,6 @@ module core
       end do  
     end function cubic_spline_interpolation
 
-    function QS_func(r,rho,Cp,T,T_before,dt) result(Q_S)
-      real(dp),allocatable,intent(in)::r(:),rho(:),Cp(:),T(:),T_before(:)
-      real(dp),intent(in)::dt
-      real(dp)::Q_S,pi_
-      real(dp),allocatable::qs(:)
-
-      pi_ = acos(-1.0_dp)
-
-      qs = r**2.0_dp*rho*Cp*(T-T_before)
-
-      Q_S = midpoint_integration(r,qs)*4*pi_/dt
-    end function QS_func
-
-    function QL_func(ri,ri_before,L_H,rhoi,dt) result(Q_L)
-      real(dp),intent(in)::L_H,ri_before,ri,rhoi,dt
-      real(dp)::Q_L, pi_, dri
-
-      pi_ = acos(-1.0_dp)
-
-      dri = ri - ri_before
-
-      Q_L = 4*pi_*ri**2.0_dp*L_H*rhoi*dri/dt
-    end function QL_func
-
-    function QR_func(r,rho,H,dt) result(Q_R)
-      real(dp),allocatable,intent(in)::r(:),rho(:)
-      real(dp),intent(in)::H,dt
-      real(dp),allocatable::qr(:)
-      real(dp)::Q_R, pi_
-
-      pi_ = acos(-1.0_dp)
-
-      qr = rho*H*r**2
-
-      Q_R = midpoint_integration(r,qr)*4*pi_/dt
-    end function QR_func
-
-    function QP_func(r,alpha,T,PT,Ttc,Ttc_old,dr,dt) result(Q_P)
-      real(dp),allocatable,intent(in)::r(:),alpha(:),T(:)
-      real(dp),intent(in)::PT,Ttc,Ttc_old,dr,dt
-      real(dp)::Q_P,pi_
-      real(dp),allocatable::qp(:)
-
-      pi_ = acos(-1.0_dp)
-
-      qp = r**2.0_dp*alpha*T
-
-      Q_P = midpoint_integration(r,qp)*4*PT*pi_*(Ttc-Ttc_old)/(dt*dr)
-    end function QP_func
-
     function T_melt(P) result(T_m)
       real(dp),intent(in)::P
       real(dp)::T_m
@@ -231,7 +179,7 @@ module core
       ! length of arrays will depend on the core size
       n_cmb = params%pI%prof_nm+1 !cmb index (initialize.f90 line 585, 07.08.2024) !+1 and we start in mat:8 without we start in mat:7
       m = 1000 - n_cmb + 1 ! size of init arrays
-      core%n = 20000 ! change core resolution (e.g. r_init(2)-r_init(-1))
+      core%n = 15000 ! change core resolution (e.g. r_init(2)-r_init(-1))
 
       ! check that core%n is gt m
       if (core%n < m) then
@@ -239,7 +187,7 @@ module core
         stop
       end if
 
-      allocate(vals_t(1000,14),g_init(m),p_init(m),rho_init(m),r_init(m),T_init(m),Cp_init(m),alpha_init(m),mat_init(m),core%T_old(core%n))
+      allocate(vals_t(1000,14),g_init(m),p_init(m),rho_init(m),r_init(m),T_init(m),Cp_init(m),alpha_init(m),mat_init(m))
       
       open(70,file="profs.res",form='formatted',status='unknown')
         do i=1,1000
@@ -271,7 +219,7 @@ module core
       ! initiallize const. parameters
       core%Hc = 1.0e-12_dp  ! (W/kg)
       core%LH = 750000.0_dp ! (J/kg) (Nimmo et al. 2015)
-      core%PT = 1.0_dp !                                                      ToDo: find correct value
+      core%PT = 0.0_dp !                                                      ToDo: find correct value
       core%kc = 125.07_dp ! W/m/K       !125.07 to 216.18 W/m/K (Li et al. 2021) from Nimmo et al. 2015 130 W/m/K is given
 
       ! build core arrays with cubic spline interpolation and core radius
@@ -283,16 +231,8 @@ module core
       core%alpha = cubic_spline_interpolation(r_init,alpha_init,core%r)
 
       core%Tb = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts !ToDo check when it is defined?
-      core%ri_old = 0.0_dp ! initial guess
-      core%Ttc = core%T(core%n-1) ! find correct value
-      core%Tc_old = core%T(core%n)+0.00004_dp ! initial guess
-      core%Tc = core%T(core%n) ! find correct value
-      core%T_old = core%T+0.00004_dp ! initial guess     ! T = T_t exp( alpha_t g / Cp_t * dr )
+      core%Tc = core%T(core%n) ! ToDo: find correct value
       core%Tm = 2060.0_dp * (1 + 6.14_dp*1.0e-12_dp * core%p - 4.5_dp*1.0e-24_dp * core%p**2.0_dp)
-      
-      !headers = ['dt  ','ri  ','rhoi','Tc  ','Tb  ','QCMB','QS  ','QL  ','QR  ','QP  ']
-      ! initiate header of file 75 for core properties
-      !write(75, '(9(A4))') headers
       
       deallocate(vals_t,g_init,p_init,rho_init,r_init,T_init,Cp_init,alpha_init,mat_init)
     end subroutine init_core
@@ -307,15 +247,9 @@ module core
       type(mesh_cp),intent(in)::mesh
       real(dp),intent(in)::km_,dt_,dt_old_,t_
       real(dp)::rho_c,Cp_c,Vol,Tav,dt,dt_old,t                    ! local variables stored in and passed from params
-      character(len=27) :: headers(10)                           ! headers for file 75
-      !real(dp)::rb,rtc,Tb,Tc,km,rhom,rhoc,Hm               ! dimensionalized variables
-      !real(dp)::cm0,cc0,cm1,cc1                            ! integration constants
-      !integer,parameter::n_la=5
-      !integer::ipiv(n_la),info
-      integer::i_lo,i_hi,i,j,check                              ! iteration vars
-      !double precision, dimension(n_la,n_la)::A            ! linear system variables
-      !double precision, dimension(n_la)::b
-
+      character(len=27) :: headers(10)                            ! headers for file 75
+      integer::i_lo,i_hi,i,j,check                                ! iteration vars
+      
       !view results 1: 
       check = 0
 
@@ -328,16 +262,16 @@ module core
         dt = dt*365.0_dp*24.0_dp*3600.0_dp ! time step in s
 
         ! Define the headers, padded with spaces to fit the format
-        headers(1) = 't [yr]                    '
-        headers(2) = 'ri [m]                    '
-        headers(3) = 'rhoi [kg/m^3]             '
-        headers(4) = 'Tc [K]                    '
-        headers(5) = 'Tb [K]                    '
-        headers(6) = 'QCMB [TW]                 '
-        headers(7) = 'QS  [TW]                  '
-        headers(8) = 'QL  [TW]                  '
-        headers(9) = 'QR  [TW]                  '
-        headers(10)= 'QP  [TW]                  '
+        headers(1) = 't[Ma]                     '
+        headers(2) = 'ri[m]                     '
+        headers(3) = 'gi[m/s^2]                 '
+        headers(4) = 'Tc[K]                     '
+        headers(5) = 'Tb[K]                     '
+        headers(6) = 'QCMB[TW]                  '
+        headers(7) = 'QS[TW]                    '
+        headers(8) = 'QL[TW]                    '
+        headers(9) = 'QR[TW]                    '
+        headers(10)= 'QP[TW]                    '
         write(75, '(10(A27))') headers
       else
         dt = (dt-dt_old)*365.0_dp*24.0_dp*3600.0_dp ! time step in s
@@ -348,17 +282,19 @@ module core
       ! 1st check if the core is completely solid 
       if (core%T(core%n) < core%Tm(core%n)) then          ! remember center at r(1) and cmb at r(n)
         core%ri = core%r(core%n)
-        core%rhoi = core%rho(core%n)
+        core%gi = core%rho(core%n)
         print *, "Core is completely solid"
         print *, "core%T(n): ", core%T(core%n), "K"
         print *, "core%Tm(n): ", core%Tm(core%n), "K"
+
       ! 2nd check if the solidus is not reached anywhere in the core
       elseif ((core%T(1) > core%Tm(1))) then                     
           core%ri = 0.0_dp
-          core%rhoi = core%rho(1)
+          core%gi = core%rho(1)
           print *, "Iron at the center of the core has not cooled enough to crystallize,"
           print *, "because core%T(n) = ", core%T(1)
           print *, "is greater than core%Tm(n) = ", core%Tm(1)
+
       ! 3rd then find the interval where the melting temperature is reached (binary search)
       else       
         i_lo = 1; i_hi = core%n
@@ -369,34 +305,16 @@ module core
           else
             i_lo = i
           end if
-        end do 
+        end do
+
         ! 4th use linear interpolation to find the exact radius and density                               !ToDo: check maximum error here for decreasing n
         core%ri = core%r(i_lo) + (core%r(i_hi) - core%r(i_lo)) * (core%T(i_lo) - core%Tm(i_lo)) / ((core%Tm(i_hi) - core%Tm(i_lo)) - (core%T(i_hi) - core%T(i_lo)))
-        core%rhoi = core%rho(i_lo) + (core%rho(i_hi) - core%rho(i_lo)) * (core%T(i_lo) - core%Tm(i_lo)) / ((core%Tm(i_hi) - core%Tm(i_lo)) - (core%T(i_hi) - core%T(i_lo)))
+        core%gi = core%g(i_lo) + (core%g(i_hi) - core%g(i_lo)) * (core%T(i_lo) - core%Tm(i_lo)) / ((core%Tm(i_hi) - core%Tm(i_lo)) - (core%T(i_hi) - core%T(i_lo)))
+        core%Ti = core%T(i_lo) + (core%T(i_hi) - core%T(i_lo)) * (core%ri - core%r(i_lo)) / (core%r(i_hi) - core%r(i_lo))
+
+        core%dTm_dp = (core%Tm(i_hi) - core%Tm(i_lo)) / (core%p(i_hi) - core%p(i_lo))
+        core%dT_dp = (core%T(i_hi) - core%T(i_lo)) / (core%p(i_hi) - core%p(i_lo))
       end if
-      !--------------------------------------------------------------------------------------
-
-      ! Block 2 - Update Core Mantle Boundary Temperature Tc (passed from  core)
-      !--------------------------------------------------------------------------------------
-       !here the very first timestep calculation is done with initial values set in core_init
-      core%ri_old = core%ri - 0.0001_dp !m !initial guess
-      
-      ! Secular cooling of the core
-      core%QS = QS_func(core%r,core%rho,core%Cp,core%T,core%T_old,dt)/1.0e12_dp
-      ! latent heat release
-      core%QL = QL_func(core%ri,core%ri_old,core%LH,core%rhoi,dt)/1.0e12_dp
-      ! radiogenic heat release
-      core%QR = QR_func(core%r,core%rho,core%Hc,dt)/1.0e12_dp
-      ! pressure heating
-      core%QP = QP_func(core%r,core%alpha,core%T,core%PT,core%Tc,core%Tc_old,core%dr,dt)/1.0e12_dp ! W to TW	
-      ! total heat flux at the core-mantle boundary
-      core%QCMB = core%QR + core%QL + core%QS + core%QP
-
-      ! => QCMB = -kc*(Ttc-Tc)/dr*4*pi*rc^2  and  QCMB = QR+QL+QS+QP
-
-      ! => Tc = dr/(4*pi*rc^2)*(QR+QL+QS+QP) + Ttc
-
-      core%Tc = 1.0e12*core%QCMB/(core%kc*4*acos(-1.0_dp)*core%rc**2.0_dp)*core%dr + core%Ttc
       !--------------------------------------------------------------------------------------
 
       !Block 3 - Update Core Mantle Boundary Temperature Tb (passed to mantle)
@@ -410,39 +328,59 @@ module core
         do j=1,mesh%ny
           Tav = Tav + mesh%dVi(i,j,1)*( field%T(i,j,1) - params%pT%Tbottom )/(mesh%rc(1)-mesh%rmin)
           Vol = Vol + mesh%dVi(i,j,1)
-        enddo
-      enddo
+        end do
+      end do
       Tav = Tav/Vol
   
       ! Tbottom = Tbottom + 3.0_dp*(rho*Cp/(rho_c*Cp_c))*dt*Tav / mesh%rmin
       ! this is how it should be, -km*dT/dr is heat flux, rho_c*Cp_c is multiplied to V_c -> version above simplification for kappa=const
       params%pT%Tbottom = params%pT%Tbottom + 3.0_dp*dt_*km_*Tav / (mesh%rmin*rho_c*Cp_c)
-      !--------------------------------------------------------------------------------------
-
-      ! Block 4 - Update core properties
-      !--------------------------------------------------------------------------------------
-      ! save old values
-      core%ri_old = core%ri
-      core%T_old = core%T
-      core%Tc_old = core%Tc
-      core%Tb_old = core%Tb
-
-      ! store new values
-      do i = 1, core%n
-        core%T(i) = core%T(i) + params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts - core%Tc   ! adiabaic core cooling dependent on heat flux out of core
-      end do
       core%Tb = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts
-      core%Tc = core%T(core%n)
-      core%Ttc = core%T(core%n-1)
+      !--------------------------------------------------------------------------------------
+
+      ! Block 2 - CMB Temp. Tc derived from Energy Budget
+      !--------------------------------------------------------------------------------------
+       !here the very first timestep calculation is done with initial values set in core_init
+      
+      ! Secular cooling of the core
+      core%QS = -midpoint_integration(core%r,core%r**2.0_dp*core%rho*core%Cp*core%T)/core%Tc
+      
+      ! latent heat release
+      core%QL = -core%ri**2.0_dp*core%LH*core%Ti/((core%dTm_dp-core%dT_dp)*core%gi*core%Tc)
+
+      ! radiogenic heat release
+      core%QR = midpoint_integration(core%r,core%rho*core%r**2.0_dp)*core%Hc
+
+      ! pressure heating
+      core%QP = midpoint_integration(core%r,core%alpha*core%T*core%r**2.0_dp)*core%PT
+
+      ! total heat flux at the core-mantle boundary
+      core%QCMB = -params%pF%k*(core%Tb-core%Tc)/core%dr*core%rc**2.0_dp
+
+      ! total heat flux at the core-mantle boundary after eq. 78 
+      !in Nimmo et al. 2015 an update of Gubbins et al. 2003: dTc/dt = (Qcmb-QR)/~QT
+      core%Tc = core%Tc + (core%QCMB-core%QR)/(core%QS+core%QL+core%QP)*dt
+      !--------------------------------------------------------------------------------------
+
+      ! Block 4 - Update core temperature profile
+      !--------------------------------------------------------------------------------------
+      core%Tc_old = core%T(core%n)
+      core%T(core%n) = core%Tc
+
+      do i = core%n-1, 1, -1
+        !core%T(i) = core%Tc * exp(midpoint_integration(core%r(i:core%n), core%alpha(i:core%n) * core%g(i:core%n) / core%Cp(i:core%n)))
+        core%T(i) = core%Tc*core%T(i)/core%Tc_old
+      end do
+      
       !...ToDo: update further core properties?
       !--------------------------------------------------------------------------------------
 
       ! BLock 5 - Convergence Check
       !--------------------------------------------------------------------------------------
-      if (core%Tc > 1.0e+24) then
+      if (core%Tc > 1.0e+24_dp) then
         print *, "Error: CMB temperature is too high and is likely diverging."
         stop
-      elseif (core%Tb > 1.0e+24) then
+      elseif (core%Tb > 1.0e+24_dp) then
         print *, "Error: Temperature at the bottom of the mantle is too high and is likely diverging."
         stop
       elseif (core%Tc < 0.0_dp) then
@@ -456,19 +394,18 @@ module core
 
       ! Block 6 - Write core properties to file 75 and print results
       !-------------------------------------------------------------------------------------
+
+      write(75, '(10(x e23.15,x) )') t*1.0e-6_dp,core%ri,core%gi,core%Tc,core%Tb,core%QCMB*4*acos(-1.0_dp)/1.0e+12_dp,&
+                                      core%QS*4*acos(-1.0_dp)/1.0e+12_dp,core%QL*4*acos(-1.0_dp)/1.0e+12_dp,&
+                                      core%QR*4*acos(-1.0_dp)/1.0e+12_dp,core%QP*4*acos(-1.0_dp)/1.0e+12_dp
+
       if (check > 0) then
         print *, "times: ", dt_/params%pF%time_yr, "yr"
-        print *, "QR: ", core%QR, "TW", " QL: ", core%QL, "TW", " QS: ", core%QS, "TW", " QP: ", core%QP, "TW"
-        print *, "QCMB: ", core%QCMB, "TW"
+        print *, "new CMB Temp.: ", core%T(core%n), "K"
+        print *, "QR: ", core%QR, "TW", " QL: ", core%QL, "TW", " QS: ", core%QS, "TW", " QP: ", core%QP, "TW", "QCMB: ", core%QCMB, "TW"
         print *, "After the calculation of the core cooling subroutine:"
-        print *, "old CMB Temp.: ", core%Tc_old, "K"
-        print *, "new CMB Temp.: ", core%Tc, "K"
-        print *, "old Tbottom: ", core%Tb_old, "K"
         print *, "new Tbottom: ", params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts, "K"
-        print *, "new bottom core TBL Temp.: ", core%Ttc, "K"
       end if
-
-      write(75, '(10(x e23.15,x) )') t,core%ri,core%rhoi,core%Tc,core%Tb,core%QCMB,core%QS,core%QL,core%QR,core%QP
       !-------------------------------------------------------------------------------------
     end subroutine core_cooling
 end module core

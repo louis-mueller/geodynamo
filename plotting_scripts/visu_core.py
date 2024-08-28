@@ -1,39 +1,54 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Define the file path using os.path.join for platform independence
-file_path = 'data_core.res'
+file_name = 'data_core.res'
+output_file_name = 'core_plot.svg'
+plots_dir = os.path.join(os.getcwd(), 'Plots')
+debug_dir = os.path.join(os.getcwd(), 'Debug')
+file_dir = os.path.join(debug_dir, file_name)
 
-# Load the .res file into a DataFrame with the first line as header
+if not os.path.exists(debug_dir):
+    print(f"Error: {debug_dir} does not exist.")
+    sys.exit(1)
+
+print(f"Reading data from {file_dir}")
+
+titles = ['Time', 'ICB Radius', 'Density at ICB', 'CMB Temperature', 'Bottom TBL mantle Temperature',
+          'CMB Heat', 'Secular Cooling', 'Latent Heat Release', 'Radiogenic Heating', 'Pressure Heating']
+
 try:
-    df = pd.read_csv(file_path, delim_whitespace=True)
+    df = pd.read_csv(file_dir, delim_whitespace=True)
 except pd.errors.ParserError as e:
     print(f"Error parsing the file: {e}")
-    # Handle the error, perhaps by inspecting or fixing the file
     raise
 
-# Ensure the DataFrame has the correct number of columns
 if df.shape[1] != 10:
     raise ValueError("The input file must have exactly 10 columns.")
 
-# Get the column names from the header
-column_names = df.columns
+ids = df.columns
 
-# Plotting
-fig, axs = plt.subplots(3, 3, figsize=(15, 15), sharex=True)  # 3x3 grid of subplots
+fig, axs = plt.subplots(3, 3, figsize=(15, 15), sharex=True)
 
-# Flatten the 3x3 array of axes to easily loop through them
 axs = axs.flatten()
 
-for i in range(1, 10):  # Loop over columns 2 to 10 (index 1 to 9)
-    axs[i-1].plot(df[column_names[0]], df[column_names[i]], label=column_names[i])
-    axs[i-1].set_ylabel(column_names[i])
-    axs[i-1].legend(loc='upper right')
-    axs[i-1].grid(True)
+for i in range(1, 10): 
+    axs[i-1].plot(df[ids[0]], df[ids[i]], label=ids[i], color='black')
+    axs[i-1].set_ylabel(ids[i])
+    #axs[i-1].set_title(titles[i])
+    #axs[i-1].legend(loc='upper right')
+    #axs[i-1].grid(True)
 
-# Set the x-axis label for the last row of subplots
 for ax in axs[-3:]:
-    ax.set_xlabel(column_names[0])
+    ax.set_xlabel('t [Myr]')
 
 plt.tight_layout()
-plt.show()
+
+# Ensure the "Plots" directory exists and save the SVG file there
+
+if not os.path.exists(plots_dir):
+    os.makedirs(plots_dir)
+
+output_file_path = os.path.join(plots_dir, output_file_name)
+plt.savefig(output_file_path)
+print(f'Plot saved as {output_file_name}')
