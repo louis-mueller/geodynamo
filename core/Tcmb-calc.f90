@@ -1,4 +1,4 @@
-!real(dp)::rb,rtc,Tb,Tc,km,rhom,rhoc,Hm                     ! dimensionalized variables
+x!real(dp)::rb,rtc,Tb,Tc,km,rhom,rhoc,Hm                     ! dimensionalized variables
       !real(dp)::cm0,cc0,cm1,cc1                                  ! integration constants
       !integer,parameter::n_la=5
       !integer::ipiv(n_la),info

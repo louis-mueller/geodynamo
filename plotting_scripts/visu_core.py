@@ -1,6 +1,9 @@
 import os
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+
+os.chdir('/scratch/Simulations_Louis/')
 
 file_name = 'data_core.res'
 output_file_name = 'core_plot.svg'
@@ -33,11 +36,13 @@ fig, axs = plt.subplots(3, 3, figsize=(15, 15), sharex=True)
 axs = axs.flatten()
 
 for i in range(1, 10): 
-    axs[i-1].plot(df[ids[0]], df[ids[i]], label=ids[i], color='black')
+    axs[i-1].plot(df[ids[0]], df[ids[i]], color='black')
     axs[i-1].set_ylabel(ids[i])
     #axs[i-1].set_title(titles[i])
-    #axs[i-1].legend(loc='upper right')
     #axs[i-1].grid(True)
+
+axs[2].plot(df[ids[0]],df[ids[3]], label=r'$M_{\oplus} = 1$, $w_{Fe} = 30\%$, $n = 1000$', color='black')
+axs[2].legend(loc='upper right', fontsize=14)
 
 for ax in axs[-3:]:
     ax.set_xlabel('t [Myr]')
