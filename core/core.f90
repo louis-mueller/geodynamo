@@ -26,6 +26,8 @@ module core
     real(dp)::PT                                ! numerical coeff. to relate pressure change at ICB to core cooling (=1.0_dp?)
     real(dp)::kc  !W/(m*K)                      ! thermal conductivity of the core
     real(dp)::kappa  !m^2/s                     ! thermal diffusivity
+    real(dp)::beta                              ! saturation constant for fast rotating dynamos
+    real(dp)::mu  !H/m                          ! magnetic permeability
     real(dp)::gi  !m/s^2                        ! gravity at the inner core
     real(dp)::pi  !Pa                           ! pressure at the inner core
     real(dp)::Ra                                ! Rayleigh number
@@ -38,6 +40,10 @@ module core
     real(dp)::Ti  !K                            ! pure iron melting temperature
     real(dp)::dTm_dp !K/Pa                      ! derivative of the pure iron melting temperature with respect to pressure
     real(dp)::dT_dp !K/Pa                       ! derivative of the core temperature with respect to pressure
+    real(dp)::FT  !W/m^2                        ! thermal buoyancy flux
+    real(dp)::m  !A*m^2                         ! magnetic moment
+    real(dp)::Bc  !T                            ! magnetic field strength at the core-mantle boundary
+    real(dp)::Bs  !T                            ! magnetic field strength at the surface
     real(dp)::TD,TR,TS,TP  !K                             
     real(dp)::QR,QL,QS,QP,QC,QT,QD  ! W         ! heat fluxes (out of the core)                
   end type core_properties
@@ -181,12 +187,14 @@ module core
       type(params_tot),intent(inout)::params
       real(dp),allocatable::vals_t(:,:) 
       real(dp),allocatable::g_init(:),p_init(:),rho_init(:),r_init(:),T_init(:),Cp_init(:),alpha_init(:),mat_init(:)
+      real(dp)::pi
       integer::n_cmb,i,m
       
       ! length of arrays will depend on the core size
       n_cmb = params%pI%prof_nm+1 !cmb index (initialize.f90 line 585, 07.08.2024) !+1 and we start in mat:8 without we start in mat:7
       m = 1000 - n_cmb + 1 ! size of init arrays
       core%n = 5000 ! change core resolution (e.g. r_init(2)-r_init(-1))
+      pi = acos(-1.0_dp)
 
       ! check that core%n is gt m
       if (core%n < m) then
@@ -230,6 +238,8 @@ module core
       core%kc = 125.07_dp ! W/m/K       !125.07 to 216.18 W/m/K (Li et al. 2021) from Nimmo et al. 2015 130 W/m/K is given
       core%gi = 0.0_dp ! (m/s^2)     
       core%eta = 1.0e+5_dp ! Pas         de Wijs et al. 1998 is 0.006 Pas but this value changes with 14 magnitudes in the literature so what to choose? 
+      core%beta = 0.2_dp ! saturation constant for fast rotating dynamos (Bonati et al. 2021)
+      core%mu = 4.0_dp*pi*1.0e-7_dp ! (H/m)           magnetic permeability 
 
       ! build core arrays with cubic spline interpolation and core radius
       core%g = cubic_spline_interpolation(r_init,g_init,core%r)
@@ -256,14 +266,15 @@ module core
       type(variables_unknowns),intent(in)::field
       type(mesh_cp),intent(in)::mesh
       real(dp),intent(in)::km_,dt_,t_
-      real(dp)::rho_c,Cp_c,Vol,Tav,dt,t                           ! local variables stored in and passed from params
-      character(len=27) :: headers(10)                            ! headers for file 75
+      real(dp)::rho_c,Cp_c,Vol,Tav,dt,t,pi                        ! local variables stored in and passed from params
+      character(len=27) :: headers(13)                            ! headers for file 75
       integer::i_lo,i_hi,i,j                                      ! iteration vars
 
       ! redimentionalize time step variable
       dt = dt_/params%pF%time_yr  !yr
       t = t_/params%pF%time_yr !yr
       dt = dt*365.0_dp*24.0_dp*3600.0_dp ! time step in s
+      pi = acos(-1.0_dp)
 
       if (t < 1050) then              ! ToDo: find better statement for first time step
         ! Define the headers, padded with spaces to fit the format
@@ -277,8 +288,11 @@ module core
         headers(8) = 'QC[TW]                    '
         headers(9) = 'QS[TW]                    '
         headers(10)= 'QL[TW]                    '
+        headers(11)= 'QD[TW]                    '
+        headers(12)= 'Bc[T]                     '
+        headers(13)= 'Bs[T]                     '
         
-        write(75, '(10(A27))') headers
+        write(75, '(13(A27))') headers
       end if
       
       ! Block 1 - Finding Inner Core Radius
@@ -400,11 +414,11 @@ module core
       ! Block 5 - Find the Dispersion Energy
       !--------------------------------------------------------------------------------------
       ! heat output units [W]
-      core%QC = core%QC*4*acos(-1.0_dp)
-      core%QS = core%QS*4*acos(-1.0_dp)*core%dTc
-      core%QL = core%QL*4*acos(-1.0_dp)*core%dTc
-      core%QR = core%QR*4*acos(-1.0_dp)
-      core%QP = core%QP*4*acos(-1.0_dp)*core%dTc
+      core%QC = core%QC*4.0_dp*pi
+      core%QS = core%QS*4.0_dp*pi*core%dTc
+      core%QL = core%QL*4.0_dp*pi*core%dTc
+      core%QR = core%QR*4.0_dp*pi
+      core%QP = core%QP*4.0_dp*pi*core%dTc
 
       ! speceific tempeatures
       core%TD = core%T(core%n-2)
@@ -414,14 +428,39 @@ module core
 
       core%QD = core%TD/core%Tc * ((1-core%Tc/core%TS)*core%QS + (1-core%Tc/core%Ti)*core%QL &
                  + (1-core%Tc/core%TR)*core%QR + (1-core%Tc/core%TP)*core%QP)
-      print *, "QD: ", core%QD*1.0e-12_dp, "TW"
       !--------------------------------------------------------------------------------------
 
-      ! Block 6 - Write Core Properties to File 75
+      ! Block 6 - Define the magnetic field strength
+      !--------------------------------------------------------------------------------------
+      ! after Bonati et al. 2021
+      ! thermal buoyancy flux =>    FT = alpha*g*Qc/(rho*Cp)
+      core%FT = core%alpha(core%n)*core%g(core%n)/(core%rho(core%n)*core%Cp(core%n))*(-core%QC/(4.0_dp*pi*core%rc**2.0_dp))
+
+      ! magnetic moment =>    m = 4*pi*rc^3*beta*(rho/mu)*FT^(1/3) 
+      core%m = 4.0_dp*pi*core%rc**3.0_dp*core%beta*(core%rho(core%n)/core%mu)*(core%FT*(core%rc-core%ri))**(1.0_dp/3.0_dp)
+
+      ! magnetic field strength at cmb =>    Bc = beta*(rho*mu)^(1/2)*FT^(1/3)*(rc-ri)^(1/3)
+      core%Bc = core%beta*(core%rho(core%n)*core%mu)**0.5_dp*(core%FT*(core%rc-core%ri))**(1.0_dp/3.0_dp)
+
+      ! magnetic field strength at the surface =>    Bs = Bc*(rc/rp)^(3)
+      core%Bs = core%Bc*(core%rc/(params%pF%D*params%pI%Rp))**3.0_dp
+      !--------------------------------------------------------------------------------------
+
+      ! Block 7 - Write Core Properties to File 75
       !-------------------------------------------------------------------------------------
+      ! bring the first flux values in order for visibility when plotting:
+      if (t < 10000) then
+        core%QS = 0.0_dp
+        core%QL = 0.0_dp
+        core%QR = 0.0_dp
+        core%QP = 0.0_dp
+        core%QD = 0.0_dp
+      end if
+
       ! heat output units [TW]
-      write(75, '(10(x e23.15,x) )') t*1.0e-6_dp,core%ri,core%Ra,core%Tb,core%Tc,core%delta, &
-                                    core%Ti,core%QC*1.0e-12_dp,core%QS*1.0e-12_dp,core%QL*1.0e-12_dp
+      write(75, '(13(x e23.15,x) )') t*1.0e-6_dp,core%ri,core%Ra,core%Tb,core%Tc,core%delta, &
+                                    core%Ti,core%QC*1.0e-12_dp,core%QS*1.0e-12_dp,core%QL*1.0e-12_dp, &
+                                    core%QD*1.0e-12_dp,core%Bc,core%Bs
       !-------------------------------------------------------------------------------------
     end subroutine core_cooling
 end module core
