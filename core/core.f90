@@ -27,17 +27,19 @@ module core
     real(dp)::kc  !W/(m*K)                      ! thermal conductivity of the core
     real(dp)::kappa  !m^2/s                     ! thermal diffusivity
     real(dp)::gi  !m/s^2                        ! gravity at the inner core
+    real(dp)::pi  !Pa                           ! pressure at the inner core
     real(dp)::Ra                                ! Rayleigh number
     real(dp)::Ra_crit                           ! critical Rayleigh number
     real(dp)::delta                             ! thickness of the thermal boundary layer
     real(dp)::eta                               ! viscosity of the thermal boundary layer
     real(dp)::Tb  !K                            ! temperature above core-mantle boundary
     real(dp)::Tc  !K                            ! temperature at the core-mantle boundary
-    real(dp)::Tc_old !K                         ! temperature at the core-mantle boundary at the previous time step
+    real(dp)::dTc !K                            ! temperature at the core-mantle boundary at the previous time step
     real(dp)::Ti  !K                            ! pure iron melting temperature
     real(dp)::dTm_dp !K/Pa                      ! derivative of the pure iron melting temperature with respect to pressure
-    real(dp)::dT_dp !K/Pa                       ! derivative of the core temperature with respect to pressure   
-    real(dp)::QR,QL,QS,QP,QC,QT  ! W            ! heat fluxes (out of the core)                
+    real(dp)::dT_dp !K/Pa                       ! derivative of the core temperature with respect to pressure
+    real(dp)::TD,TR,TS,TP  !K                             
+    real(dp)::QR,QL,QS,QP,QC,QT,QD  ! W         ! heat fluxes (out of the core)                
   end type core_properties
 
   contains
@@ -184,7 +186,7 @@ module core
       ! length of arrays will depend on the core size
       n_cmb = params%pI%prof_nm+1 !cmb index (initialize.f90 line 585, 07.08.2024) !+1 and we start in mat:8 without we start in mat:7
       m = 1000 - n_cmb + 1 ! size of init arrays
-      core%n = 1000 ! change core resolution (e.g. r_init(2)-r_init(-1))
+      core%n = 5000 ! change core resolution (e.g. r_init(2)-r_init(-1))
 
       ! check that core%n is gt m
       if (core%n < m) then
@@ -227,7 +229,7 @@ module core
       core%PT = 0.0_dp !                                                      ToDo: find correct value
       core%kc = 125.07_dp ! W/m/K       !125.07 to 216.18 W/m/K (Li et al. 2021) from Nimmo et al. 2015 130 W/m/K is given
       core%gi = 0.0_dp ! (m/s^2)     
-      core%eta = 1.0e+5_dp ! Pas         de Wijs et al. 1998 is 0.006 Pas but this value changes with 14 magnitudes in the literature  
+      core%eta = 1.0e+5_dp ! Pas         de Wijs et al. 1998 is 0.006 Pas but this value changes with 14 magnitudes in the literature so what to choose? 
 
       ! build core arrays with cubic spline interpolation and core radius
       core%g = cubic_spline_interpolation(r_init,g_init,core%r)
@@ -238,7 +240,7 @@ module core
       core%alpha = cubic_spline_interpolation(r_init,alpha_init,core%r)
 
       core%Tb = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts !ToDo check when it is defined?
-      core%Tc = core%T(core%n-1) ! ToDo: find correct value
+      core%Tc = core%T(core%n-1)
       core%Tm = 2060.0_dp * (1 + 6.14_dp*1.0e-12_dp * core%p - 4.5_dp*1.0e-24_dp * core%p**2.0_dp)
       core%kappa = core%kc/(core%rho(core%n)*core%Cp(core%n)) ! thermal diffusivity
       
@@ -254,12 +256,9 @@ module core
       type(variables_unknowns),intent(in)::field
       type(mesh_cp),intent(in)::mesh
       real(dp),intent(in)::km_,dt_,t_
-      real(dp)::rho_c,Cp_c,Vol,Tav,dt,t                    ! local variables stored in and passed from params
+      real(dp)::rho_c,Cp_c,Vol,Tav,dt,t                           ! local variables stored in and passed from params
       character(len=27) :: headers(10)                            ! headers for file 75
-      integer::i_lo,i_hi,i,j,check                                ! iteration vars
-      
-      !view results 1: 
-      check = 0
+      integer::i_lo,i_hi,i,j                                      ! iteration vars
 
       ! redimentionalize time step variable
       dt = dt_/params%pF%time_yr  !yr
@@ -296,7 +295,7 @@ module core
       ! 2nd check if the solidus is not reached anywhere in the core
       elseif ((core%T(1) > core%Tm(1))) then                     
           core%ri = 0.0_dp
-          core%gi = core%rho(1)
+          core%gi = core%g(1)
           print *, "Iron at the center of the core has not cooled enough to crystallize,"
           print *, "because core%T(n) = ", core%T(1)
           print *, "is greater than core%Tm(n) = ", core%Tm(1)
@@ -316,16 +315,18 @@ module core
         ! 4th use linear interpolation to find the exact radius and density                               !ToDo: check maximum error here for decreasing n
         core%ri = core%r(i_lo) + (core%r(i_hi) - core%r(i_lo)) * (core%T(i_lo) - core%Tm(i_lo)) / ((core%Tm(i_hi) - core%Tm(i_lo)) - (core%T(i_hi) - core%T(i_lo)))
         core%gi = core%g(i_lo) + (core%g(i_hi) - core%g(i_lo)) * (core%T(i_lo) - core%Tm(i_lo)) / ((core%Tm(i_hi) - core%Tm(i_lo)) - (core%T(i_hi) - core%T(i_lo)))
+        core%pi = core%p(i_lo) + (core%p(i_hi) - core%p(i_lo)) * (core%T(i_lo) - core%Tm(i_lo)) / ((core%Tm(i_hi) - core%Tm(i_lo)) - (core%T(i_hi) - core%T(i_lo)))
         core%Ti = core%T(i_lo) + (core%T(i_hi) - core%T(i_lo)) * (core%ri - core%r(i_lo)) / (core%r(i_hi) - core%r(i_lo))
 
-        core%dTm_dp = (core%Tm(i_hi) - core%Tm(i_lo)) / (core%p(i_hi) - core%p(i_lo))
-        core%dT_dp = (core%T(i_hi) - core%T(i_lo)) / (core%p(i_hi) - core%p(i_lo))
+        ! 5th calculate the derivative of melting and adiabatic temperature at the ICB
+        core%dTm_dp = ((core%Tm(i_hi) - core%Tm(i_lo)) / (core%p(i_hi) - core%p(i_lo))) ! add weighted difference for non-uniform grid P if n low?
+        core%dT_dp = ((core%T(i_hi) - core%T(i_lo)) / (core%p(i_hi) - core%p(i_lo)))  
       end if
       !--------------------------------------------------------------------------------------
 
-      !Block 3 - Update Core Mantle Boundary Temperature Tb (passed to mantle)
+      !Block 2 - Update Core Mantle Boundary Temperature Tb (passed to mantle)
       !--------------------------------------------------------------------------------------
-      rho_c=params%pI%rho_c
+      rho_c=params%pI%rho_c ! ToDo: define better values as in init_core for rho and Cp
       Cp_c=params%pI%Cp_c
   
       Tav = 0.0_dp
@@ -344,11 +345,11 @@ module core
       core%Tb = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts
       !--------------------------------------------------------------------------------------
 
-      ! Block 2 - CMB Temp. Tc derived from Energy Budget
+      ! Block 3 - CMB Temp. Tc derived from Energy Budget
       !--------------------------------------------------------------------------------------
       !Define the rayleigh number
       core%Ra = core%alpha(core%n) * core%g(core%n) * (core%Ti-core%T(core%n)) * (core%rc-core%ri)**3.0_dp / (core%eta*core%kappa)
-      core%Ra_crit = 0.28_dp * core%Ra**0.21_dp
+      core%Ra_crit = 0.28_dp * core%Ra**0.21_dp ! Breuer et al. 2010
       core%delta = (core%rc-core%ri) * (core%Ra_crit/core%Ra)**(1.0_dp/3.0_dp)
       
       ! Secular cooling of the core
@@ -373,8 +374,18 @@ module core
 
       ! Block 4 - Update core temperature profile
       !--------------------------------------------------------------------------------------
-      core%Tc_old = core%T(core%n)
-      core%T(core%n) = core%Tc
+      ! check convergence
+      if ((core%Tc > 1.0e+10_dp).or.(core%Tb > 1.0e+10_dp)) then
+        print *, "Error: CMB temperature is too high and is likely diverging."
+        stop
+      elseif ((core%Tc < 0.0_dp).or.(core%Tb < 0.0_dp)) then
+        print *, "Error: CMB temperature is too cold."
+        stop
+      end if
+
+      core%dTc = abs(core%T(core%n) - core%Tc) / dt !change to last time step dTc/dt
+      
+      core%T(core%n) = core%Tc ! updated cmb boundary cond.
 
       do i = core%n, 2, -1
         core%T(i-1) = core%T(i) + core%alpha(i) * core%g(i) / core%Cp(i) * core%T(i) * core%dr
@@ -386,42 +397,31 @@ module core
       !...ToDo: update further core properties?
       !--------------------------------------------------------------------------------------
 
-      ! BLock 5 - Convergence Check
+      ! Block 5 - Find the Dispersion Energy
       !--------------------------------------------------------------------------------------
-      if (core%Tc > 1.0e+10_dp) then
-        print *, "Error: CMB temperature is too high and is likely diverging."
-        stop
-      elseif (core%Tb > 1.0e+10_dp) then
-        print *, "Error: Temperature at the bottom of the mantle is too high and is likely diverging."
-        stop
-      elseif (core%Tc < 0.0_dp) then
-        print *, "Error: CMB temperature is too cold."
-        stop
-      elseif (core%Tb < 0.0_dp) then
-        print *, "Error: Temperature at the bottom of the mantle is too cold."
-        stop
-      end if
+      ! heat output units [W]
+      core%QC = core%QC*4*acos(-1.0_dp)
+      core%QS = core%QS*4*acos(-1.0_dp)*core%dTc
+      core%QL = core%QL*4*acos(-1.0_dp)*core%dTc
+      core%QR = core%QR*4*acos(-1.0_dp)
+      core%QP = core%QP*4*acos(-1.0_dp)*core%dTc
+
+      ! speceific tempeatures
+      core%TD = core%T(core%n-2)
+      core%TS = core%T(core%n-1)
+      core%TR = core%T(core%n-1)
+      core%TP = core%T(core%n-1)
+
+      core%QD = core%TD/core%Tc * ((1-core%Tc/core%TS)*core%QS + (1-core%Tc/core%Ti)*core%QL &
+                 + (1-core%Tc/core%TR)*core%QR + (1-core%Tc/core%TP)*core%QP)
+      print *, "QD: ", core%QD*1.0e-12_dp, "TW"
       !--------------------------------------------------------------------------------------
 
-      ! Block 6 - Write core properties to file 75 and print results
+      ! Block 6 - Write Core Properties to File 75
       !-------------------------------------------------------------------------------------
-      !correct output units
-      core%QC = core%QC*4*acos(-1.0_dp)*1.0e-12_dp
-      core%QS = core%QS*4*acos(-1.0_dp)*1.0e-12_dp*core%Tc/dt
-      core%QL = core%QL*4*acos(-1.0_dp)*1.0e-12_dp*core%Tc/dt
-      core%QR = core%QR*4*acos(-1.0_dp)*1.0e-12_dp
-      core%QP = core%QP*4*acos(-1.0_dp)*1.0e-12_dp*core%Tc/dt
-
-      write(75, '(10(x e23.15,x) )') t*1.0e-6_dp,core%ri,core%Ra,core%Tb,core%Tc,core%delta,core%Ti,core%QC,core%QS,core%QL
-
-      if (check > 0) then
-        print *, "times: ", dt_/params%pF%time_yr, "yr"
-        print *, "new CMB Temp.: ", core%T(core%n), "K"
-        print *, " QL:", core%QL, "TW", " QS: ", core%QS, "TW"
-        print *, "QR: ", core%QR, "TW", " QL: ", core%QL, "TW", " QS: ", core%QS, "TW", " QP: ", core%QP, "TW", "QCMB: ", core%QC, "TW"
-        print *, "After the calculation of the core cooling subroutine:"
-        print *, "new Tbottom: ", params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts, "K"
-      end if
+      ! heat output units [TW]
+      write(75, '(10(x e23.15,x) )') t*1.0e-6_dp,core%ri,core%Ra,core%Tb,core%Tc,core%delta, &
+                                    core%Ti,core%QC*1.0e-12_dp,core%QS*1.0e-12_dp,core%QL*1.0e-12_dp
       !-------------------------------------------------------------------------------------
     end subroutine core_cooling
 end module core
