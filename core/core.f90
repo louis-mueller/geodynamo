@@ -45,7 +45,7 @@ module core
     real(dp)::Bc  !T                            ! magnetic field strength at the core-mantle boundary
     real(dp)::Bs  !T                            ! magnetic field strength at the surface
     real(dp)::TD,TR,TS,TP  !K                             
-    real(dp)::QR,QL,QS,QP,QC,QT,QD  ! W         ! heat fluxes (out of the core)                
+    real(dp)::QR,QL,QS,QP,QCMB,QT,QD  ! W         ! heat fluxes (out of the core)                
   end type core_properties
 
   contains
@@ -267,7 +267,7 @@ module core
       type(mesh_cp),intent(in)::mesh
       real(dp),intent(in)::km_,dt_,t_
       real(dp)::rho_c,Cp_c,Vol,Tav,dt,t,pi                        ! local variables stored in and passed from params
-      character(len=27) :: headers(13)                            ! headers for file 75
+      character(len=27) :: headers(14)                            ! headers for file 75
       integer::i_lo,i_hi,i,j                                      ! iteration vars
 
       ! redimentionalize time step variable
@@ -279,20 +279,21 @@ module core
       if (t < 1050) then              ! ToDo: find better statement for first time step
         ! Define the headers, padded with spaces to fit the format
         headers(1) = 't[Ma]                     '
-        headers(2) = 'ri[m]                     '
+        headers(2) = 'ri/rc[%]                  '
         headers(3) = 'Ra[]                      '
-        headers(4) = 'Tb[K]                     '
-        headers(5) = 'Tc[K]                     '
-        headers(6) = 'delta[m]                  '
+        headers(4) = 'delta[m]                  '
+        headers(5) = 'Tb[K]                     '
+        headers(6) = 'Tc[K]                     '
         headers(7) = 'Ti[K]                     '
-        headers(8) = 'QC[TW]                    '
+        headers(8) = 'QCMB[TW]                  '
         headers(9) = 'QS[TW]                    '
         headers(10)= 'QL[TW]                    '
         headers(11)= 'QD[TW]                    '
-        headers(12)= 'Bc[T]                     '
-        headers(13)= 'Bs[T]                     '
+        headers(12)= 'm[A*m^2]                  '
+        headers(13)= 'Bc[T]                     '
+        headers(14)= 'Bs[T]                     '
         
-        write(75, '(13(A27))') headers
+        write(75, '(14(A27))') headers
       end if
       
       ! Block 1 - Finding Inner Core Radius
@@ -301,6 +302,9 @@ module core
       if (core%T(core%n) < core%Tm(core%n)) then          ! remember center at r(1) and cmb at r(n)
         core%ri = core%r(core%n)
         core%gi = core%rho(core%n)
+        core%Ti = core%T(core%n)
+        core%dT_dp = 0.0_dp
+        core%dTm_dp = 0.0_dp
         print *, "Core is completely solid"
         print *, "core%T(n): ", core%T(core%n), "K"
         print *, "core%Tm(n): ", core%Tm(core%n), "K"
@@ -310,6 +314,9 @@ module core
       elseif ((core%T(1) > core%Tm(1))) then                     
           core%ri = 0.0_dp
           core%gi = core%g(1)
+          core%Ti = core%T(1)
+          core%dT_dp = 0.0_dp
+          core%dTm_dp = 0.0_dp
           print *, "Iron at the center of the core has not cooled enough to crystallize,"
           print *, "because core%T(n) = ", core%T(1)
           print *, "is greater than core%Tm(n) = ", core%Tm(1)
@@ -379,11 +386,13 @@ module core
       core%QP = midpoint_integration(core%r,core%alpha*core%T*core%r**2.0_dp)*core%PT
 
       ! total heat flux at the core-mantle boundary
-      core%QC = -params%pF%k*(core%Tc-core%Tb)/core%delta*core%rc**2.0_dp
+      core%QCMB = -params%pF%k*(core%Tc-core%Tb)/core%delta*core%rc**2.0_dp
+
+      !print *, core%Tc - core%Tb
 
       ! total heat flux at the core-mantle boundary after eq. 78 
       !in Nimmo et al. 2015 an update of Gubbins et al. 2003: dTc/dt = (Qcmb-QR)/~QT
-      core%Tc = core%Tc + (core%QC-core%QR)/(core%QS+core%QL+core%QP)*dt
+      core%Tc = core%Tc + (core%QCMB-core%QR)/(core%QS+core%QL+core%QP)*dt
       !--------------------------------------------------------------------------------------
 
       ! Block 4 - Update core temperature profile
@@ -397,7 +406,7 @@ module core
         stop
       end if
 
-      core%dTc = abs(core%T(core%n) - core%Tc) / dt !change to last time step dTc/dt
+      core%dTc = (core%T(core%n) - core%Tc) / dt !change to last time step dTc/dt = (T(n)-Tc)/dt              see what happes if no abs() was used.
       
       core%T(core%n) = core%Tc ! updated cmb boundary cond.
 
@@ -414,7 +423,7 @@ module core
       ! Block 5 - Find the Dispersion Energy
       !--------------------------------------------------------------------------------------
       ! heat output units [W]
-      core%QC = core%QC*4.0_dp*pi
+      core%QCMB = core%QCMB*4.0_dp*pi
       core%QS = core%QS*4.0_dp*pi*core%dTc
       core%QL = core%QL*4.0_dp*pi*core%dTc
       core%QR = core%QR*4.0_dp*pi
@@ -434,7 +443,7 @@ module core
       !--------------------------------------------------------------------------------------
       ! after Bonati et al. 2021
       ! thermal buoyancy flux =>    FT = alpha*g*Qc/(rho*Cp)
-      core%FT = core%alpha(core%n)*core%g(core%n)/(core%rho(core%n)*core%Cp(core%n))*(-core%QC/(4.0_dp*pi*core%rc**2.0_dp))
+      core%FT = core%alpha(core%n)*core%g(core%n)/(core%rho(core%n)*core%Cp(core%n))*(-core%QCMB/(4.0_dp*pi*core%rc**2.0_dp))
 
       ! magnetic moment =>    m = 4*pi*rc^3*beta*(rho/mu)*FT^(1/3) 
       core%m = 4.0_dp*pi*core%rc**3.0_dp*core%beta*(core%rho(core%n)/core%mu)*(core%FT*(core%rc-core%ri))**(1.0_dp/3.0_dp)
@@ -457,10 +466,12 @@ module core
         core%QD = 0.0_dp
       end if
 
+      !print *, core%Tc, core%Tb, core%QCMB*1.0e-12_dp, core%QS*1.0e-12_dp, core%QL*1.0e-12_dp, core%Bc*1.0e6_dp, core%Bs*1.0e6_dp
+
       ! heat output units [TW]
-      write(75, '(13(x e23.15,x) )') t*1.0e-6_dp,core%ri,core%Ra,core%Tb,core%Tc,core%delta, &
-                                    core%Ti,core%QC*1.0e-12_dp,core%QS*1.0e-12_dp,core%QL*1.0e-12_dp, &
-                                    core%QD*1.0e-12_dp,core%Bc,core%Bs
+      write(75, '(14(x e23.15,x) )') t*1.0e-6_dp,core%ri/core%rc*100.0_dp,core%Ra,core%delta,core%Tb,core%Tc, &
+                                    core%Ti,core%QCMB*1.0e-12_dp,core%QS*1.0e-12_dp,core%QL*1.0e-12_dp, &
+                                    core%QD*1.0e-12_dp,core%m,core%Bc,core%Bs
       !-------------------------------------------------------------------------------------
     end subroutine core_cooling
 end module core
