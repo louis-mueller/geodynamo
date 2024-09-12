@@ -23,6 +23,7 @@ module core
     real(dp),allocatable::mat(:)                ! material phase coeff. (7.0: lower mantle, 8.0: core)
     real(dp)::Hc  !W/kg                         ! volumetric heating rate (constant because equally distributed?)
     real(dp)::LH  !J/kg                         ! latent heat of iron crystallization
+    real(dp)::dSm !J/K                          ! entropy of freezing
     real(dp)::PT                                ! numerical coeff. to relate pressure change at ICB to core cooling (=1.0_dp?)
     real(dp)::kc  !W/(m*K)                      ! thermal conductivity of the core
     real(dp)::kappa  !m^2/s                     ! thermal diffusivity
@@ -231,16 +232,6 @@ module core
       core%rc = core%r(core%n)-core%r(1)
       core%dr = (core%rc)/real(core%n-1,dp) ! core radius step size
 
-      ! initiallize const. parameters
-      core%Hc = 0.0_dp  ! (W/kg)
-      core%LH = 750000.0_dp ! (J/kg) (Nimmo et al. 2015)
-      core%PT = 0.0_dp !                                                      ToDo: find correct value
-      core%kc = 125.07_dp ! W/m/K       !125.07 to 216.18 W/m/K (Li et al. 2021) from Nimmo et al. 2015 130 W/m/K is given
-      core%gi = 0.0_dp ! (m/s^2)     
-      core%eta = 1.0e+5_dp ! Pas         de Wijs et al. 1998 is 0.006 Pas but this value changes with 14 magnitudes in the literature so what to choose? 
-      core%beta = 0.2_dp ! saturation constant for fast rotating dynamos (Bonati et al. 2021)
-      core%mu = 4.0_dp*pi*1.0e-7_dp ! (H/m)           magnetic permeability 
-
       ! build core arrays with cubic spline interpolation and core radius
       core%g = cubic_spline_interpolation(r_init,g_init,core%r)
       core%p = cubic_spline_interpolation(r_init,p_init,core%r)
@@ -249,9 +240,21 @@ module core
       core%Cp = cubic_spline_interpolation(r_init,Cp_init,core%r)
       core%alpha = cubic_spline_interpolation(r_init,alpha_init,core%r)
 
+      ! initiallize const. parameters
+      core%Hc = 0.0_dp  ! (W/kg)
+      core%dSm = 12400.0_dp*1000.0_dp/(1811.0_dp*55.845) ! J/(kg*K) 
+      core%LH = core%dSm * core%T(1) !latent heat (Nimmo et al. 2015) -> 750000
+      core%PT = 0.0_dp !                                                      ToDo: find correct value
+      core%kc = 125.07_dp ! W/m/K       !125.07 to 216.18 W/m/K (Li et al. 2021) from Nimmo et al. 2015 130 W/m/K is given
+      core%gi = 0.0_dp ! (m/s^2)     
+      core%eta = 1.0e+5_dp ! Pas         de Wijs et al. 1998 is 0.006 Pas but this value changes with 14 magnitudes in the literature so what to choose? 
+      core%beta = 0.2_dp ! saturation constant for fast rotating dynamos (Bonati et al. 2021)
+      core%mu = 4.0_dp*pi*1.0e-7_dp ! (H/m)           magnetic permeability 
+
       core%Tb = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts !ToDo check when it is defined?
       core%Tc = core%T(core%n-1)
       core%Tm = 2060.0_dp * (1 + 6.14_dp*1.0e-12_dp * core%p - 4.5_dp*1.0e-24_dp * core%p**2.0_dp)
+      core%Ti = core%T(1)
       core%kappa = core%kc/(core%rho(core%n)*core%Cp(core%n)) ! thermal diffusivity
       
       deallocate(vals_t,g_init,p_init,rho_init,r_init,T_init,Cp_init,alpha_init,mat_init)
@@ -368,6 +371,9 @@ module core
 
       ! Block 3 - CMB Temp. Tc derived from Energy Budget
       !--------------------------------------------------------------------------------------
+      ! Latent heat at the ICB 
+      core%LH = core%dSm * core%Ti 
+
       !Define the rayleigh number
       core%Ra = core%alpha(core%n) * core%g(core%n) * (core%Ti-core%T(core%n)) * (core%rc-core%ri)**3.0_dp / (core%eta*core%kappa)
       core%Ra_crit = 0.28_dp * core%Ra**0.21_dp ! Breuer et al. 2010
