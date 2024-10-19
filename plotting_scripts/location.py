@@ -11,18 +11,7 @@ import numpy as np
 from getpass import getpass
 from pathlib import Path
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-
-
-#%% FOR REMOTE LOGIN 
-def login(username, password, hostip): 
-
-    global ssh_client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    ssh_client.connect(hostname=hostip, port=10435, username=username, password=password)
-    
+import matplotlib as mpl    
 
 #%% GET FILES
 

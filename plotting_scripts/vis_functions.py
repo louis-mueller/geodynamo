@@ -53,3 +53,6 @@ def plot_data(all_data, data_type, local_dir, server_dir, comparison, params, pa
     
     if 'b' in data_type:
         plot_2D(all_data, homedir, comparison, params, params_units)
+    
+    if 'c' in data_type:
+        plot_core(all_data, homedir, comparison, params, params_units)

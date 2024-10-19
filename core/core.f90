@@ -10,8 +10,12 @@ module core
   type core_properties
     integer::n                                  ! core resolution
     real(dp)::dr  !m                            ! core radius step size (n dependant)
+    real(dp)::dri !m                            ! radius step size at the inner core
     real(dp)::ri  !m                            ! radius of the inner core
+    real(dp)::ri_old !m                         ! radius of the inner core at the previous time step
     real(dp)::rc  !m                            ! core radius
+    real(dp)::rm1 !m
+    real(dp)::rc1
     real(dp),allocatable::g(:)  !m/s^2
     real(dp),allocatable::p(:)  !Pa
     real(dp),allocatable::rho(:)  !kg/m^3
@@ -21,13 +25,16 @@ module core
     real(dp),allocatable::Cp(:) !J/(kg*K)       ! specific heat capacity
     real(dp),allocatable::alpha(:)  !K^-1       ! thermal expansion coefficient
     real(dp),allocatable::mat(:)                ! material phase coeff. (7.0: lower mantle, 8.0: core)
+    real(dp),allocatable::X0(:) !%              ! light element correction factor for the Fe melting curve (r dependant)
     real(dp)::MFe ! g/mol                       ! molar mass of iron
     real(dp)::Hc  !W/kg                         ! volumetric heating rate (constant because equally distributed?)
     real(dp)::dfH !J/mol                        ! enthalpy of fusion at standard pressure/temp. (STP)
     real(dp)::LH  !J/kg                         ! latent heat of iron crystallization
     real(dp)::dSm !J/K                          ! entropy of freezing
+    real(dp)::Xini                              ! initial light element fraction in the earths core
     real(dp)::PT                                ! numerical coeff. to relate pressure change at ICB to core cooling (=1.0_dp?)
     real(dp)::kc  !W/(m*K)                      ! thermal conductivity of the core
+    real(dp)::km  !W/(m*K)                      ! thermal conductivity at the bottom of the mantle
     real(dp)::kappa  !m^2/s                     ! thermal diffusivity
     real(dp)::beta                              ! saturation constant for fast rotating dynamos
     real(dp)::mu  !H/m                          ! magnetic permeability
@@ -38,9 +45,14 @@ module core
     real(dp)::delta                             ! thickness of the thermal boundary layer
     real(dp)::eta                               ! viscosity of the thermal boundary layer
     real(dp)::Tma  !K                           ! iron melting temperature at STP
-    real(dp)::Tb  !K                            ! temperature above core-mantle boundary
+    real(dp)::Tm1  !K                           ! temperature above core-mantle boundary
+    real(dp)::Tm1_old !K                        ! temperature above core-mantle boundary at the previous time step
+    real(dp)::Tc1
+    real(dp)::Tc1_old
     real(dp)::Tc  !K                            ! temperature at the core-mantle boundary
     real(dp)::dTc !K                            ! temperature at the core-mantle boundary at the previous time step
+    real(dp)::dTc1 !K                           ! temperature at the core-mantle boundary at the previous time step
+    real(dp)::dT_old !K                         ! temperature difference at the previous time step
     real(dp)::Ti  !K                            ! pure iron melting temperature
     real(dp)::dTm_dp !K/Pa                      ! derivative of the pure iron melting temperature with respect to pressure
     real(dp)::dT_dp !K/Pa                       ! derivative of the core temperature with respect to pressure
@@ -48,7 +60,8 @@ module core
     real(dp)::m  !A*m^2                         ! magnetic moment
     real(dp)::Bc  !T                            ! magnetic field strength at the core-mantle boundary
     real(dp)::Bs  !T                            ! magnetic field strength at the surface                           
-    real(dp)::QR,QL,QS,QP,QCMB  ! W       ! heat fluxes (out of the core)                
+    real(dp)::QR,QL,QS,QP,QCMB  ! W             ! heat fluxes (out of the core)
+    real(dp)::qc_ad  ! W/m^2                    ! adiabatic heat flux                
   end type core_properties
 
   contains
@@ -171,17 +184,6 @@ module core
       end do  
     end function cubic_spline_interpolation
 
-    function T_melt(P) result(T_m)
-      real(dp),intent(in)::P
-      real(dp)::T_m
-      ! pure iron melting temperature (Sixtrude et al. 2014)
-      ! core%Tm = 6500.0_dp * (core%p*1.0e-9_dp / 340.0_dp)**0.515_dp 
-      ! pure iron melting temperature (Gonzalez-Cataldo & Militzer 2023)
-      ! core%Tm = 6469.0_dp * (1.0_dp + (core%p*1.0e-9_dp - 300.0_dp)/434.82_dp)**0.54369_dp
-      ! pure iron melting temperature (Stevenson et al. 1983)
-      T_m = 2060.0_dp * (1 + 6.14_dp*1.0e-12_dp * P - 4.5_dp*1.0e-24_dp * P**2.0_dp)
-    end function T_melt
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! Initialize core parameters to be used in core cooling !!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -190,7 +192,7 @@ module core
       type(params_tot),intent(inout)::params
       real(dp),allocatable::vals_t(:,:) 
       real(dp),allocatable::g_init(:),p_init(:),rho_init(:),r_init(:),T_init(:),Cp_init(:),alpha_init(:),mat_init(:)
-      real(dp)::pi
+      real(dp)::pi,ri_earth,rc_earth
       integer::n_cmb,i,m
       
       ! length of arrays will depend on the core size
@@ -230,8 +232,10 @@ module core
       !          ...
       !---------------------- r_init(1) - core = 0.0,   mat = 8.0  
       core%ri = 0.0_dp
+      core%ri_old = 0.0_dp
       core%r = linspace(0.0_dp,r_init(m),core%n) 
       core%rc = core%r(core%n)-core%r(1)
+      core%rc1 = core%r(core%n-1)
       core%dr = (core%rc)/real(core%n-1,dp) ! core radius step size
 
       ! build core arrays with cubic spline interpolation and core radius
@@ -246,7 +250,7 @@ module core
       core%MFe = 55.845_dp ! g/mol
       core%Tma = 1809.0_dp ! K
       core%dfH = 12.4e3_dp ! J/mol
-      core%Hc = 0.0_dp  ! (W/kg)
+      core%Hc = 0.0_dp ! (W/kg)
       core%dSm = core%dfH*1.0e3_dp/(core%Tma*core%MFe) ! J/(kg*K) 
       core%LH = core%dSm * core%T(1) !latent heat (Nimmo et al. 2015) -> 750000
       core%PT = 0.0_dp !                                                      ToDo: find correct value
@@ -256,14 +260,33 @@ module core
       core%beta = 0.2_dp ! saturation constant for fast rotating dynamos (Bonati et al. 2021)
       core%mu = 4.0_dp*pi*1.0e-7_dp ! (H/m) 
 
-      core%Tb = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts !ToDo check when it is defined?
+      core%Tm1 = params%pT%Tbottom*params%pF%DeltaT + params%pF%Ts !ToDo check when it is defined?
       core%Tc = core%T(core%n)
-      core%Tm = 2060.0_dp * (1 + 6.14_dp*1.0e-12_dp * core%p - 4.5_dp*1.0e-24_dp * core%p**2.0_dp)
+      core%Tc1 = core%T(core%n-1)
       core%Ti = core%T(1)
       core%gi = core%g(1)
       core%dT_dp = 0.0_dp
       core%dTm_dp = 0.0_dp
       core%kappa = core%kc/(core%rho(core%n)*core%Cp(core%n)) ! thermal diffusivity
+
+      ! initialize light element fraction and dependant melting temp.
+      !----------------------------------------------------------------------------------------------
+      rc_earth = 3481514.05_dp !m 
+      ri_earth = 1215749.73_dp !m
+      core%Xini = (rc_earth-ri_earth)**3.0_dp*0.11_dp/rc_earth**3 ! correction factor earth val 0.11
+
+      core%X0 = core%Xini * (core%rc**3.0_dp) / (core%rc**3.0_dp - core%r**3.0_dp) ! new planet val
+      
+      ! fix the range of x0 where the the total volume of light elements (xini * Vc) outgrows Voc.
+      do i = 1, core%n
+          if (core%X0(i) >= 1.0_dp) then
+              core%X0(i) = 0.99999999_dp
+          end if
+      end do
+      
+      ! initialize core temperature profile
+      core%Tm = 6500.0_dp * (core%p*1.0e-9_dp / 340.0_dp)**0.515_dp / (1.0_dp - log(1-core%X0))
+      !----------------------------------------------------------------------------------------------
       
       deallocate(vals_t,g_init,p_init,rho_init,r_init,T_init,Cp_init,alpha_init,mat_init)
     end subroutine init_core
@@ -278,28 +301,37 @@ module core
       type(mesh_cp),intent(in)::mesh
       real(dp),intent(in)::km_,dt_,t_
       real(dp)::Vol,Tav,dt,t,pi,T1                                  ! local variables stored in and passed from params
-      character(len=27) :: headers(10)                            ! headers for file 75
-      integer::i_lo,i_hi,i,j                                      ! iteration vars
+      character(len=27) :: headers(12)                            ! headers for file 75
+      integer::i_lo,i_hi,i,j !,double_TBL                                      ! iteration vars
+      !real(dp)::rhom,rhoc,Hm                                     ! dimensionalized variables
+      !real(dp)::cm1,cm0,cc1,cc0                                  ! integration constants
+      !integer,parameter::n_la=5
+      !integer::ipiv(n_la),info
+      !double precision, dimension(n_la,n_la)::A                  ! linear system variables
+      !double precision, dimension(n_la)::b
 
       ! redimentionalize time step variable
       dt = dt_*params%pF%D**2.0_dp/params%pF%kappa  !s
       t = t_/params%pF%time_yr !yr
       pi = acos(-1.0_dp)
+      core%km = km_*params%pF%k !ask lena or oliver about this
 
       if (t < 1050) then              ! ToDo: find better statement for first time step
         ! Define the headers, padded with spaces to fit the format
         headers(1) = 't[Ma]                     '
         headers(2) = 'ri/rc[%]                  '
-        headers(3) = 'Tb[K]                     '
-        headers(4) = 'Tc[K]                     '
-        headers(5) = 'QCMB[TW]                  '
-        headers(6) = 'QS[TW]                    '
-        headers(7) = 'QL[TW]                    '
-        headers(8) = 'm[A*m^2]                  '
-        headers(9) = 'Bc[T]                     '
-        headers(10)= 'Bs[T]                     '
+        headers(3) = 'Tc[K]                     '
+        headers(4) = 'QCMB[TW]                  '
+        headers(5) = 'QS[TW]                    '
+        headers(6) = 'QL[TW]                    '
+        headers(7) = 'dTc/dt[K/s]               '
+        headers(8) = 'dri[T]                    '
+        headers(9) = 'FT[m^2/s^3]               '
+        headers(10)= 'm[A*m^2]                  '
+        headers(11)= 'Bc[T]                     '
+        headers(12)= 'Bs[T]                     '
         
-        write(75, '(10(A27))') headers
+        write(75, '(12(A27))') headers
       end if
       
       ! Block 1 - Finding Inner Core Radius
@@ -344,14 +376,22 @@ module core
         core%dTm_dp = ((core%Tm(i_hi) - core%Tm(i_lo)) / (core%p(i_hi) - core%p(i_lo))) ! add weighted difference for non-uniform grid P if n low?
         core%dT_dp = ((core%T(i_hi) - core%T(i_lo)) / (core%p(i_hi) - core%p(i_lo)))  
       end if
+
+      ! 6th define mean rho of the outer core interval
+      !if (i_lo /= core%n) then
+      !  core%rho_oc = sum(core%rho(i_lo:core%n))/real(core%n-i_lo+1,dp)
+      !else
+      !  core%rho_oc = core%rho(core%n)
+      !end if
+
+      core%dri = (core%ri-core%ri_old) / dt
+      core%ri_old = core%ri
       !--------------------------------------------------------------------------------------
 
-      ! Block 2 - CMB Temp. Tc derived from Energy Budget
+      ! Block 2 - Set energy terms and other core properties by previous time step
       !--------------------------------------------------------------------------------------
-      ! Latent heat at the ICB 
-      core%LH = core%dSm * core%Ti
-
       ! undimentional average temperature change into the mantle
+      core%Tm1_old = core%Tm1
       Tav = 0.0_dp
       Vol = 0.0_dp
       T1 = 0.0_dp
@@ -363,32 +403,46 @@ module core
         end do
       end do
       Tav = Tav/Vol
-      core%Tb = T1/(mesh%nl*mesh%ny)*params%pF%DeltaT + params%pF%Ts
+      core%Tm1 = T1/(mesh%nl*mesh%ny)*params%pF%DeltaT + params%pF%Ts
 
-      print *, Tav
+      ! Latent heat at the ICB 
+      core%LH = core%dSm * core%Ti
+      !--------------------------------------------------------------------------------------
 
-      ! total heat flux at the CMB redimentionalized
-      core%QCMB = km_*params%pF%k*(Tav*params%pF%DeltaT + params%pF%Ts)/params%pF%D*4.0_dp*pi*core%rc**2.0_dp !negativ
-      
+      ! Block 3 - Update core mantle boundary temperature 
+      !--------------------------------------------------------------------------------------
       ! Secular cooling of the core
-      core%QS = midpoint_integration(core%r,core%r**2.0_dp*core%rho*core%Cp*core%T)/core%Tc*4.0_dp*pi !positiv
+      core%QS = midpoint_integration(core%r,core%r**2.0_dp*core%rho*core%Cp*core%T)/core%Tc*4.0_dp*pi
       
       ! latent heat release
-      core%QL = core%ri**2.0_dp*core%LH*core%Ti/((core%dT_dp-core%dTm_dp)*core%gi*core%Tc)*4.0_dp*pi !negativ
-
-      print *, core%ri, core%Ti, core%dTm_dp-core%dT_dp, core%gi, core%Tc
+      core%QL = 4.0_dp*pi*core%ri**2.0_dp*core%LH*core%Ti/((core%dTm_dp-core%dT_dp)*core%gi*core%Tc)
 
       ! radiogenic heat release
-      core%QR = midpoint_integration(core%r,core%rho*core%r**2.0_dp)*core%Hc*4.0_dp*pi !positiv
+      core%QR = midpoint_integration(core%r,core%rho*core%r**2.0_dp)*core%Hc*4.0_dp*pi
 
       ! pressure heating
-      core%QP = midpoint_integration(core%r,core%alpha*core%T*core%r**2.0_dp)*core%PT*4.0_dp*pi !mal schauen
+      core%QP = midpoint_integration(core%r,core%alpha*core%T*core%r**2.0_dp)*core%PT*4.0_dp*pi
+
+      ! total heat flux at the CMB redimentionalized
+      core%QCMB = core%km*(Tav*params%pF%DeltaT + params%pF%Ts)/params%pF%D*4.0_dp*pi*core%rc**2.0_dp !negative
 
       ! total heat flux at the core-mantle boundary after eq. 78 
       ! in Nimmo et al. 2015 an update of Gubbins et al. 2003: dTc/dt = (Qcmb-QR)/~QT
-      core%Tc = core%Tc + (core%QCMB-core%QR)/(core%QS+core%QL+core%QP)*dt  
+      core%Tc = core%Tc + (core%QCMB+core%QR)/(core%QS+core%QL+core%QP)*dt  
 
       params%pT%Tbottom = (core%Tc-params%pF%Ts)/params%pF%DeltaT
+
+      core%dTc = (core%Tc-core%T(core%n)) / dt !change to last time step dTc/dt = (Tc-T(n))/dt  
+
+      core%T(core%n) = core%Tc
+
+      do i = core%n, 2, -1
+        core%T(i-1) = core%T(i) + core%alpha(i) * core%g(i) / core%Cp(i) * core%T(i) * core%dr
+      end do
+
+      ! actual latent and secular heat fluxes
+      core%QS = core%QS*core%dTc
+      core%QL = -core%QL*core%dTc
       !--------------------------------------------------------------------------------------
 
       ! Block 3 - Update core temperature profile 
@@ -401,34 +455,19 @@ module core
         print *, "Error: CMB temperature is too cold."
         stop
       end if
-
-      core%dTc = abs(core%T(core%n) - core%Tc) / dt !change to last time step dTc/dt = (T(n)-Tc)/dt       
-
-      core%T(core%n) = core%Tc
-
-      do i = core%n, 2, -1
-        core%T(i-1) = core%T(i) + core%alpha(i) * core%g(i) / core%Cp(i) * core%T(i) * core%dr
-      end do
-      
-      !...ToDo: update further core properties?
-      ! correct the actual heat fluxes
-
-      ! heat output units [TW]
-      core%QR = core%QR*1.0e-12_dp
-      core%QS = core%QS*core%dTc*1.0e-12_dp
-      core%QL = core%QL*core%dTc*1.0e-12_dp
-      core%QP = core%QP*core%dTc*1.0e-12_dp
-      core%QCMB = core%QCMB*1.0e-12_dp
       !--------------------------------------------------------------------------------------
 
       ! Block 4 - Define the magnetic field strength
       !--------------------------------------------------------------------------------------
+      ! adibatic heat flux
+      core%qc_ad = core%kc*core%alpha(core%n)*core%g(core%n)*core%T(core%n)/core%Cp(core%n)
+
       ! after Bonati et al. 2021 and Christenson & Olson 2006
-      ! thermal buoyancy flux =>    FT = alpha*g*Qc/(rho*Cp)
-      core%FT = core%alpha(core%n)*core%g(core%n)/(core%rho(core%n)*core%Cp(core%n))*(-core%QCMB/(4.0_dp*pi*core%rc**2.0_dp))
+      ! thermal buoyancy flux =>    FT = alpha*g*(q_cmb - q_ad)/(rho*Cp)
+      core%FT = core%alpha(core%n)*core%g(core%n)/(core%rho(core%n)*core%Cp(core%n))*(-core%QCMB/(4.0_dp*pi*core%rc**2.0_dp)-core%qc_ad)
 
       ! magnetic moment =>    m = 4*pi*rc^3*beta*(rho/mu)*FT^(1/3) 
-      core%m = 4.0_dp*pi*core%rc**3.0_dp*core%beta*(core%rho(core%n)/core%mu)*(core%FT*(core%rc-core%ri))**(1.0_dp/3.0_dp)
+      core%m = 4.0_dp*pi*core%rc**3.0_dp*core%beta*(core%rho(core%n)/core%mu)**(1.0_dp/2.0_dp)*(core%FT*(core%rc-core%ri))**(1.0_dp/3.0_dp)
 
       ! magnetic field strength at cmb =>    Bc = beta*(rho*mu)^(1/2)*FT^(1/3)*(rc-ri)^(1/3)
       core%Bc = core%beta*(core%rho(core%n)*core%mu)**0.5_dp*(core%FT*(core%rc-core%ri))**(1.0_dp/3.0_dp)
@@ -440,20 +479,15 @@ module core
       ! Block 5 - Write Core Properties to File 75
       !--------------------------------------------------------------------------------------
       ! heat output units [TW]
-      !print *, "Tc: ", core%Tc, "K"
-      !print *, "Tb: ", core%Tb, "K"
-      !print *, "Ttc: ", core%T(core%n-1), "K"
-      !print *, "km: ", km_*params%pF%k, "W/m/K"
-      !print *, "kc: ", core%kc, "W/m/K"
-      !print *, "rb-rc: ", (mesh%rc(1)-mesh%rmin)*params%pF%D, "m" 
-      !print *, "rho: ", core%rho(core%n), "kg/m^3"
-      !print *, "rtc: ", core%r(core%n-1), "m"
+      core%QR = core%QR*1.0e-12_dp
+      core%QS = core%QS*1.0e-12_dp
+      core%QL = core%QL*1.0e-12_dp
+      core%QP = core%QP*1.0e-12_dp
+      core%QCMB = core%QCMB*1.0e-12_dp
 
-      print *, " "
-      print *, "Qcmb: ", core%QCMB, "TW", "  QS :", core%QS, "TW", "QL: ", core%QL, "TW"
-
-      write(75, '(10(x e23.15,x) )') t*1.0e-6_dp,core%ri/core%rc*100.0_dp,core%Tb,core%Tc, &
-                                      core%QCMB,core%QS,core%QL,core%m,core%Bc,core%Bs
+      write(75, '(12(x e23.15,x) )') t*1.0e-6_dp,core%ri/core%rc*100.0_dp,core%Tc, &
+                                      core%QCMB,core%QS,core%QL,core%dTc,core%dri, &
+                                      core%FT,core%m,core%Bc,core%Bs
       !-------------------------------------------------------------------------------------
     end subroutine core_cooling
 end module core

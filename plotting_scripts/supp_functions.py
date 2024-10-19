@@ -28,24 +28,31 @@ def files(data_type):
 
     if 'b' in data_type:
         for entry in boundary_files:
-            filenames.append(entry)     
+            filenames.append(entry) 
+
+    if 'c' in data_type:
+        filenames.append(core_files) 
         
 
 #%% LOGIN 
 
-def login(): 
-
-    for name in safety:
-        from input_data import name
+def login(username, password, hostip):
+    try:
+        global ssh_client  # If you need this to be global; consider alternatives
+        
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Attempt to connect
+        ssh_client.connect(hostname=hostip, username=username, password=password)
+        print("Connection successful.")
     
-    global ssh_client
-    ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    ssh_client.connect(hostname=hostip, port=10435, username=username, password=password)
+    except paramiko.SSHException as e:
+        print(f"SSH connection error: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
     
-    for name in safety:
-        del globals()[name]
+    return ssh_client
 
 #%% FORMAT FOLDERNAMES
 
@@ -97,12 +104,34 @@ def uploadtransform(path, file):
                 
                 
         data = [vel, visc, temp, shf]
-             
+    
+    elif file == core_files:
+
+        try:
+            data = np.ndarray.tolist(np.loadtxt(path + file, dtype=str, skiprows=1))
+            
+            for line in range(len(data)):
+                for column in range(len(data[line])):
+                    
+                    E_there     = data[line][column].find('E+')
+                    plus_there  = data[line][column].find('+')
+                    
+                    if plus_there != -1 and E_there == -1:
+                        data[line][column] = float(data[line][column].replace('+', 'E+'))
+                    
+                    else:
+                        data[line][column] = float(data[line][column])
+        except:
+            data = []
+            print(file, 'could not be found in this folder.')
+            print('didnt work')
+    
     else:
         
         try:
             
             data = np.ndarray.tolist(np.loadtxt(path + file, dtype=str))
+            
     
             for line in range(len(data)):
                 for column in range(len(data[line])):
@@ -185,6 +214,36 @@ def assign(data, collected_data, folder, file, params_units):
         collected_data[folder][list(params_units['b'].keys())[1]]      = visc
         collected_data[folder][list(params_units['b'].keys())[2]]      = temp
         collected_data[folder][list(params_units['b'].keys())[3]]      = shf
+
+    if file == core_files:
+
+        time                = [item[0] for item in data]
+        icb_radius          = [item[1] for item in data]
+        cmb_temp            = [item[2] for item in data]
+        cmb_heat            = [item[3] for item in data]
+        sec_cooling         = [item[4] for item in data]
+        latent_heat         = [item[5] for item in data]
+        cmb_temp_change     = [item[6] for item in data]
+        icb_radius_change   = [item[7] for item in data]
+        thermal_buoyancy    = [item[8] for item in data]
+        magnetic_moment     = [item[9] for item in data]
+        cmb_field_strength  = [item[10] for item in data]
+        surf_field_strength = [item[11] for item in data]
+        
+        
+        collected_data[folder][list(params_units['c'].keys())[0]]      = time
+        collected_data[folder][list(params_units['c'].keys())[1]]      = icb_radius
+        collected_data[folder][list(params_units['c'].keys())[2]]      = cmb_temp
+        collected_data[folder][list(params_units['c'].keys())[3]]      = cmb_heat
+        collected_data[folder][list(params_units['c'].keys())[4]]      = sec_cooling
+        collected_data[folder][list(params_units['c'].keys())[5]]      = latent_heat
+        collected_data[folder][list(params_units['c'].keys())[6]]      = cmb_temp_change
+        collected_data[folder][list(params_units['c'].keys())[7]]      = icb_radius_change
+        collected_data[folder][list(params_units['c'].keys())[8]]      = thermal_buoyancy
+        collected_data[folder][list(params_units['c'].keys())[9]]      = magnetic_moment
+        collected_data[folder][list(params_units['c'].keys())[10]]     = cmb_field_strength
+        collected_data[folder][list(params_units['c'].keys())[11]]     = surf_field_strength
+        
     
     return collected_data
     

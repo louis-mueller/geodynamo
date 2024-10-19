@@ -9,9 +9,6 @@ Created on Mon Aug 19 16:02:01 2024
 from input_data import *
 from supp_functions import *
 
-for name in safety:
-    del globals()[name]
-
 from glob import glob
 from stat import S_ISDIR
 import os.path
@@ -103,15 +100,10 @@ def findfolders(loc, local_dir, server_dir):
 
 def getfiles(comparison, local_dir, server_dir):
 
-    # LOGIN
-    for name in safety:
-        from input_data import name
-        
-    login(username, password, hostip)
-    
-    for name in safety:
-        del globals()[name]
+    from input_data import username, password, hostip
 
+    ssh_client = login(username, password, hostip)
+    
     # ACCESS REMOTE FILES
     global sftp_client
     sftp_client = ssh_client.open_sftp()
@@ -139,6 +131,7 @@ def getfiles(comparison, local_dir, server_dir):
                     print(filename, 'does not exist in folder', folder)
                 
     else:
+        print(filenames)
         
         for filename in filenames:
             Path(local_dir).mkdir(exist_ok=True)
@@ -184,6 +177,11 @@ def importfiles(data_type, homedir, comparison, params_units):
                 
                 data_profs = uploadtransform(path, boundary_files)
                 data_profs_assigned = assign(data_profs, collected_data, folder, boundary_files, params_units)
+            
+            if 'c' in data_type:
+                
+                data_core = uploadtransform(path, core_files)
+                data_core_assigned = assign(data_core, collected_data, folder, core_files, params_units)
                 
     else:
         
@@ -207,6 +205,11 @@ def importfiles(data_type, homedir, comparison, params_units):
             
             data_profs = uploadtransform(path, boundary_files)
             data_profs_assigned = assign(data_profs, collected_data, folder, boundary_files, params_units)
+        
+        if 'c' in data_type:
+
+            data_core = uploadtransform(path, core_files)
+            data_core_assigned = assign(data_core, collected_data, folder, core_files, params_units)
 
 
     return collected_data

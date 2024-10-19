@@ -1,4 +1,4 @@
-# visu_profs.py
+# PyVis-CHIC_profs_res.py
 # -*- coding: utf-8 -*-
 
 '''
@@ -19,6 +19,7 @@ import os
 import numpy as np 
 import sys
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import scipy.interpolate as interp
 from scipy.integrate import quad
 
@@ -26,7 +27,7 @@ from scipy.integrate import quad
 # -----------------------------------------------------------------------------
 INT_STRUCT_DATA = 'profs.res'               # This must have a very specific structure othewise the code would not read it correctly
 TEST = 0                                    # in configure_simulation_dictionary() the plot attributes are set easier if TEST == TRUE 
-ADD_PREM = 1                                # show PREM500 data
+ADD_PREM = 1                                # show PREM500.csv data
 n = 1000                                    # data size for PREM500 interpolation (n must equal len(data[:,0]))
 ID = ['_p', 'Fe30', 'sFe','M']              # Identifiers in dir-name to distinguish simulations
 DATA_TO_LOAD = list(range(10))              # Specify the colums of INT_STRUCT_DATA you would like to load
@@ -38,8 +39,11 @@ GRID = False                                # Grid on or off
 # -----------------------------------------------------------------------------
 
 # Color range (normalized) 
-COLOR_PALETTE = np.array([
-    [255, 195, 0], [255, 87, 51], [199, 0, 57], [144, 12, 63], [88, 24, 69]]) / 255
+cmap = mpl.colormaps['viridis_r']
+COLOR_PALETTE = cmap(np.linspace(0,1,5))
+
+#np.array([
+#    [255, 195, 0], [255, 87, 51], [199, 0, 57], [144, 12, 63], [88, 24, 69]]) / 255
 
 # from:https://colordesigner.io/color-scheme-builder#5C4B51-8CBEB2-F2EBBF-F3B562-F06060 (23.07.24)
 COLOR_PALETTE_TEST = np.array([ [92, 75, 81],[140, 190, 178],[243, 181, 98],[240, 96, 96]]) / 255

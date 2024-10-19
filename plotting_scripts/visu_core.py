@@ -6,17 +6,21 @@ import numpy as np
 
 #Input
 #--------------------------------------------------------------------------------
-sim_name = 'Debug'              # name it 'Debug' if you want to test the script
+sim_name = 'Debug'             # name it 'Debug' if you want to test the script
+sim_label = r'$M_{\oplus} = 1$, $w_{Fe} = 30\%$, $n = 5000$'
+#other names 'M1_Fe30_sFe6-5_p', 'M1_Fe30_sFe6-5_p', 'M1_Fe30_sFe6-5_p', 'M1_Fe30_sFe6-5_p'
 file_name = 'data_core.res'
 scale_factor = 5
 time_steps = 0                 # 0 means all time steps
 #titles = ['Time', 'ICB Radius', 'Density at ICB', 'CMB Temperature', 'Bottom TBL mantle Temperature',
 #          'CMB Heat', 'Secular Cooling', 'Latent Heat Release', 'Radiogenic Heating', 'Pressure Heating']
-ylabels = ['ICB Radius [%]', 'Rayleigh Num.', 'TBL Thickness [m]', 'Temperatures [K]',
-          'Core Heat [TW]', r'Magnetic Field Strengnth [$\mu$T]']
+ylabels = ['ICB Radius [%]', 'Temperatures [K]','Core Heat [TW]','Therm. Buoyancy Flux [m^2/s^3]', 'Magnetic Moment [Am^2]', r'Magnetic Field Strengnth [$\mu$T]']
 clrs = np.array([ [92, 75, 81],[140, 190, 178],[243, 181, 98],[240, 96, 96]]) / 255
 #--------------------------------------------------------------------------------
-
+t_Ma = 1.0e6*365*24*3600 #s
+mass = sim_name[1]
+Fe = sim_name[5:7]
+ 
 os.chdir('/scratch/Simulations_Louis/')
 plots_dir = os.path.join(os.getcwd(), 'Plots')
 sim_dir = os.path.join(os.getcwd(), sim_name)
@@ -52,28 +56,27 @@ axs = axs.flatten()
 axs[0].plot(df[ids[0]], df[ids[1]], color=clrs[0])
 axs[0].set_ylabel(ylabels[0])
 
-axs[1].plot(df[ids[0]], df[ids[2]], color=clrs[0])
+axs[1].plot(df[ids[0]],df[ids[2]], color=clrs[0], label=sim_label)
+axs[1].plot(df[ids[0]], df[ids[2]], color=clrs[2], label=r'$T_c$')
 axs[1].set_ylabel(ylabels[1])
+axs[1].legend(loc='upper right', fontsize=14)
 
-axs[2].plot(df[ids[0]],df[ids[3]], label=r'$M_{\oplus} = 1$, $w_{Fe} = 30\%$, $n = 5000$', color=clrs[0])
-axs[2].set_ylabel(ylabels[2])
+axs[2].plot(df[ids[0]], df[ids[3]], color=clrs[0], label=r'$Q_{CMB}$')
+axs[2].plot(df[ids[0]], df[ids[4]], color=clrs[1], label=r'$Q_S$')
+axs[2].plot(df[ids[0]], df[ids[5]], color=clrs[2], label=r'$Q_L$')
 axs[2].legend(loc='upper right', fontsize=14)
+axs[2].set_ylabel(ylabels[2])
 
-axs[3].plot(df[ids[0]], df[ids[4]], color=clrs[2], label=r'$T_c$')
-axs[3].plot(df[ids[0]], df[ids[4]], color=clrs[1], label=r'$T_b$')
-axs[3].plot(df[ids[0]], df[ids[6]], color=clrs[3], label=r'$T_i$')
+axs[3].plot(df[ids[0]], df[ids[8]], color=clrs[3], label=r'$F_T$')
 axs[3].legend(loc='upper right', fontsize=14)
 axs[3].set_ylabel(ylabels[3])
 
-axs[4].plot(df[ids[0]], df[ids[7]], color=clrs[2], label=r'$Q_{CMB}$')
-axs[4].plot(df[ids[0]], df[ids[8]], color=clrs[1], label=r'$Q_S$')
-axs[4].plot(df[ids[0]], df[ids[9]], color=clrs[3], label=r'$Q_L$')
-axs[4].plot(df[ids[0]], df[ids[10]], color=clrs[0], label=r'$Q_D$')
+axs[4].plot(df[ids[0]], df[ids[9]], color=clrs[3], label=r'$m$')
 axs[4].legend(loc='upper right', fontsize=14)
 axs[4].set_ylabel(ylabels[4])
 
-axs[5].plot(df[ids[0]], df[ids[12]]*1e6, color='red', label=r'$B_{CMB}$')
-axs[5].plot(df[ids[0]], df[ids[13]]*1e6, color='blue', label=r'$B_{surface}$')
+axs[5].plot(df[ids[0]], df[ids[10]]*1e6, color='red', label=r'$B_{CMB}$')
+axs[5].plot(df[ids[0]], df[ids[11]]*1e6, color='black', label=r'$B_{surface}$')
 axs[5].legend(loc='upper right', fontsize=14)
 axs[5].set_ylabel(ylabels[5])
 

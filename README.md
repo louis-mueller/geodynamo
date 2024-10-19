@@ -8,12 +8,20 @@ Unix System Requirements:
 - python3
 - awk
 
-Python Environment Requirements:
-- os
-- sys
-- matplotlib
-- numpy
-- scipy
+### Summary vis_main.py
+Python visualization suite for core, heat-data, boundary-params and interior structure Profiles
+main files to be edited are: vis_main.py and input_data.py
+The output file is stored to the ouput directoy (typically: local_dir/Plots/output_file.svg).
+
+Modules: numpy, scipy, matplotlib, paramiko
+
+Necessary module list for curta.zedat.fu-berlin.de to plot locally:
+```
+ module load Python/3.12.3-GCCcore-13.3.0
+```
+before plotting you need to set up a virtual enviroment an install the required modules
+On a side note CHIC is compiled successfully with intel/2020a on curta so it is usefull to purge your modules 
+before executing CHIC otherwise Compiler issues may occur.
 
 ### Summary process_profs.sh
 Bash Script to automatically run a sequence of interior structure simulations with CHIC. 

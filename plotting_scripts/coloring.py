@@ -10,27 +10,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-colormap = {}
-
-#%% INPUT DATA
+#%% INPUT & HEAT DATA
 
 def colorcoding(foldernames):
     
-    nrColors = len(foldernames)
+    #nrColors = len(foldernames)
+    nrColors = 5
     
-    cmap = mpl.colormaps['viridis']
+    cmap = mpl.colormaps['viridis_r']
     colors = cmap(np.linspace(0,1,nrColors))
     
     return colors
 
-#%% HEAT DATA
-
-colormap['h'] = {}
-
-
 #%% BOUNDARY DATA
 
-colormap    = {'Radial Velocity':          'summer', 
-               'Radial Viscosity':         'YlGnBu', 
-               'Radial Temperature':       'magma', 
-               'Surface Heat Flux':        'YlOrRd'}
+def colorcoding_b():
+
+    colormap    = {'Radial Velocity':          'summer', 
+                   'Radial Viscosity':         'YlGnBu', 
+                   'Radial Temperature':       'magma', 
+                   'Surface Heat Flux':        'YlOrRd'}
+    
+    return colormap

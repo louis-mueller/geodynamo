@@ -20,21 +20,21 @@ from vis_functions import *
 # In case you are working locally, specify the folder you want to access in 'local_dir'.
 # In case you are working on the server, specify the folder you want to access in 'server_dir'.       
 
-local_dir    = '\Users\louis\Documents\plots'
-server_dir   = '/scratch/Simulations_Louis'
-
+local_dir    = 'C:\\Users\\louis\\Documents\\geodynamo\\plotting_scripts\\'
+server_dir   = '/scratch/louim95/M1_Fe30_sFe6-5_p/'
 
 # DATA TYPE
 
 # What kind of data do you want to plot? You can also choose multiple types.
 
-data_type = 'h'    # i - input profiles           
+data_type = 'c'      # i - input profiles           
                      # h - heat stuff               
-                     # b - parameters at boundaries                
+                     # b - parameters at boundaries
+                     # c - core data ! ToDo implement this                
 
 # ACCESS TO MULTIPLE FOLDERS
 
-comparison = True    # Do you want to compare and plot data from more than one folder?
+comparison = False    # Do you want to compare and plot data from more than one folder?
 
 #%% GET DATA
 
@@ -54,12 +54,12 @@ params['i'] = {'Gravity':                               True,
                'Melt Temperature':                      True,
                'Heat Capacity':                         True,
                'Thermal Expansivity':                   True,
-               'Grüneisen Parameter':                   True,
-               'Isothermal Bulk Modulus':               True,
-               'Adiabatic Bulk Modulus':                True,
-               'Shear Modulus':                         True,
-               'Electrical Conductivity':               True,
-               'Material Phase Number':                 True}
+               'Grüneisen Parameter':                   False,
+               'Isothermal Bulk Modulus':               False,
+               'Adiabatic Bulk Modulus':                False,
+               'Shear Modulus':                         False,
+               'Electrical Conductivity':               False,
+               'Material Phase Number':                 False}
               
 # HEAT DATA  
 
@@ -75,5 +75,19 @@ params['b'] = {'Radial Velocity':                       True,
                'Radial Viscosity':                      True, 
                'Radial Temperature':                    True, 
                'Surface Heat Flux':                     True}
+
+# CORE DATA
+params['c'] = {'Time':                                  False,    
+               'Inner Core Volume':                     True,
+               'CMB Temperature':                       True,
+               'CMB Heat':                              True,
+               'Secular Cooling':                       True,
+               'Latent Heat Release':                   True,
+               'CMB Temperature Change':                False,
+               'ICB Radius Change':                     False,
+               'Thermal Buoyancy Flux':                 True,
+               'Magnetic Moment':                       True,
+               'CMB Magnetic Field Strength':           False,
+               'Surface Magnetic Field Strength':       True}
 
 plot_data(all_data, data_type, local_dir, server_dir, comparison, params, params_units)
