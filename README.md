@@ -1,8 +1,29 @@
-## CHIC Processing Scripts
-This repository contains processing scripts for CHIC (Noack et al. 2015) input and output files.
+ ## Aspects, Edits, and Improvements Done During my Master Thesis 2024/25
 
 Author: Louis Müller (12.08.2024)
+### General Notes for CHIC (Noack et al. 2015)
 
+Compiling CHIC on curta necessitates 
+```
+module load intell/2020a
+```
+make sure check pre loaded modules as to not cause conflicts with GCC for example.
+running jobscripts: memory was at 1000 MB and the time was initially 72h, which was
+too low and is now set to 250h.
+
+### Interior Structure
+Initially CHIC works with a pure iron core for this reason XFe (Iron weight fraction) has mainly been 
+synonymous with the core mass fraction.
+Here adding light elements (eg. sulfur) was edited for model1D.f90, however was not considered anywhere else,
+which may cause problems in the future if it were to be assumed as added. 
+
+The question to handle is: should light elements be considered as an input for the main code. 
+As it stands, the simulations with chic (using the core.f90 module) need to be conditioned directly in the module
+and aligned to the initial interior structure developed with model1D
+
+X_Si0 is handeld in model1D.f90 to edit the true core mass fraction.
+
+## CHIC Processing Scripts
 ### Dependencies for visu_profs.py and process_profs.sh
 Unix System Requirements:
 - python3
@@ -38,6 +59,8 @@ Any MAX_COUNT of directories named as listed in DIR_STRS containing a file named
 with the data stored in columns, are plotted in a pre defined configuration of Subplots. 
 The color is chosen by a letter snippet defining the planet mass (M), and three further snippets can 
 be defined in ID to differentiate simulations accordingly.
+
+It still does not have the correct x-axis label!
 
 ### Summary process_debug.sh
 This script is used to streamline the CHIC testing and debugging workflow.
