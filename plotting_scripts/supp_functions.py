@@ -6,6 +6,8 @@ Created on Tue Aug 20 10:47:55 2024
 @author: theresabuettner
 """
 
+import os
+import matplotlib.pyplot as plt
 from input_data import *
 for name in safety:
     del globals()[name]
@@ -64,26 +66,34 @@ def manyfolders(chosenfolders):
 #%% UPLOAD AND TRANSFORM DATA
 
 def uploadtransform(path, file):
+
+    print(f'Processing File: "{file}" in Folder: "{os.path.basename(os.path.normpath(path))}".')
     
     if file == boundary_files:
-        
-        vel  = np.ndarray.tolist(np.loadtxt(path + boundary_files[0], dtype=float))
+
+        full_paths = []
+        for i in range(len(boundary_files)):
+            full_paths.append(os.path.join(path, boundary_files[i]))
+            if not os.path.exists(full_paths[i]):
+                print(f"The path: {full_paths[i]} either does not exist, or there is a typo in input_data.py or vis_main.py.")
+
+        vel  = np.ndarray.tolist(np.loadtxt(full_paths[0], dtype=float))
         # for line in range(len(vel)):
         #     for column in range(len(vel[line])):
         #         vel[line][column] = float(vel[line][column])
         
-        visc = np.ndarray.tolist(np.loadtxt(path + boundary_files[1], dtype=float))
+        visc = np.ndarray.tolist(np.loadtxt(full_paths[1], dtype=float))
         # for line in range(len(visc)):
         #     for column in range(len(visc[line])):
         #         visc[line][column] = float(visc[line][column])
         
-        temp = np.ndarray.tolist(np.loadtxt(path + boundary_files[2], dtype=float))
+        temp = np.ndarray.tolist(np.loadtxt(full_paths[2], dtype=float))
         # for line in range(len(temp)):
         #     for column in range(len(temp[line])):
         #         temp[line][column] = float(temp[line][column])
         
         try:
-            shf = np.ndarray.tolist(np.loadtxt(path + boundary_files[3], dtype=str))
+            shf = np.ndarray.tolist(np.loadtxt(full_paths[3], dtype=str))
             for line in range(len(shf)):
                 for column in range(len(shf[line])):
                     
@@ -97,14 +107,20 @@ def uploadtransform(path, file):
                         shf[line][column] = float(shf[line][column])
         except:
             shf = []
+            print(file, f'could not be found in this folder: "{os.path.basename(os.path.normpath(path))}".')
                 
                 
         data = [vel, visc, temp, shf]
     
     elif file == core_files:
 
+        full_path = os.path.join(path, file)
+
+        if not os.path.exists(full_path):
+            print(f"The path: {full_path} either does not exist, or there is a typo in input_data.py or vis_main.py.")
+
         try:
-            data = np.ndarray.tolist(np.loadtxt(path + file, dtype=str, skiprows=1))
+            data = np.ndarray.tolist(np.loadtxt(full_path, dtype=str, skiprows=1))
             
             for line in range(len(data)):
                 for column in range(len(data[line])):
@@ -119,14 +135,17 @@ def uploadtransform(path, file):
                         data[line][column] = float(data[line][column])
         except:
             data = []
-            print(file, 'could not be found in this folder.')
-            print('didnt work')
+            print(file, f'could not be found in this folder: "{os.path.basename(os.path.normpath(path))}".')
     
     else:
+
+        full_path = os.path.join(path, file)
+        if not os.path.exists(full_path):
+            print(f"The path: {full_path} either does not exist, or there is a typo in input_data.py or vis_main.py.")
         
         try:
             
-            data = np.ndarray.tolist(np.loadtxt(path + file, dtype=str))
+            data = np.ndarray.tolist(np.loadtxt(full_path, dtype=str))
             
     
             for line in range(len(data)):
@@ -142,7 +161,7 @@ def uploadtransform(path, file):
                         data[line][column] = float(data[line][column])
         except:
             data = []
-            print(file, 'could not be found in this folder.')
+            print(file, f'could not be found in this folder: "{os.path.basename(os.path.normpath(path))}".')
                 
     return data
 
@@ -242,4 +261,23 @@ def assign(data, collected_data, folder, file, params_units):
         
     
     return collected_data
+
+def save_or_show(save_fig, plot_dir, output_name, file_type='.png'):
+    
+    if save_fig:
+        if not os.path.exists(plot_dir):
+            create_dir = input(f"Directory '{plot_dir}' does not exist. Do you want to create it? (y/n): ").strip().lower()
+
+            if create_dir == 'y':
+                os.makedirs(plot_dir)
+                print(f"Directory '{plot_dir}' has been created.")
+            else:
+                print("Directory was not created. Aborting save operation and just showing instead.")
+                plt.show()  
+
+        output_path = os.path.join(plot_dir, output_name + file_type)
+        plt.savefig(output_path)
+        print(f'Plot saved as "{os.path.basename(os.path.normpath(output_path))}" in directory "{plot_dir}".')
+    else:
+        plt.show()
     

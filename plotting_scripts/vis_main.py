@@ -18,9 +18,13 @@ from vis_functions import *
 # If you want to access multiple folders, specify the parent folder.
 
 # In case you are working locally, specify the folder you want to access in 'local_dir'.
-# In case you are working on the server, specify the folder you want to access in 'server_dir'.       
+# In case you are working on the server, specify the folder you want to access in 'server_dir'.  
+# 
+# curta local: '/scratch/louim95/'
+# thor local: '/scratch/Simulations_Louis/'
+# ideapad-louis local: 'D:\\Geodynamo_Core_Simulation\\tc_250924_M1-2_Fe30-60\\'  
 
-local_dir    = '/scratch/louim95/'
+local_dir    = 'D:\\Geodynamo_Core_Simulation\\tc_250924_M1-2_Fe30-60\\'
 server_dir   = 'other'
 
 # DATA TYPE

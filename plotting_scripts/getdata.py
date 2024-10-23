@@ -14,13 +14,8 @@ for name in safety:
 
 from glob import glob
 from stat import S_ISDIR
-import os.path
-import paramiko
-import numpy as np
-from getpass import getpass
+import os
 from pathlib import Path
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 
 #%% DEFINE FINDFOLDERS
@@ -166,7 +161,7 @@ def importfiles(data_type, homedir, comparison, params_units):
             
             collected_data[folder] = {}
             
-            path  = homedir + folder
+            path  = os.path.join(homedir,folder)
             #files = [path + i for i in filenames]
             
             if 'i' in data_type:

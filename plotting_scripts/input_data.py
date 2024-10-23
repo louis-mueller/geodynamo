@@ -33,13 +33,13 @@ loc = 'l'            # Where are you working?
 
 # Define the filenames of the differend output files you want to access.
 
-input_files    =  '/profs.res'             # input profiles
-heat_files     =  '/data_char_val.res'     # heat stuff
-boundary_files = ['/data_vel_profs.res',   # boundaries:   velocity
-                  '/data_visc_profs.res',                # viscosity
-                  '/data_temp_profs.res',                # temperature
-                  '/data_surf_heatflux_profs.res']       # surface heat flux
-core_files     =  '/data_core.res'          # core data
+input_files    =  'profs.res'             # input profiles
+heat_files     =  'data_char_val.res'     # heat stuff
+boundary_files = ['data_vel_profs.res',   # boundaries:   velocity
+                  'data_visc_profs.res',                # viscosity
+                  'data_temp_profs.res',                # temperature
+                  'data_surf_heatflux_profs.res']       # surface heat flux
+core_files     =  'data_core.res'          # core data
 
 #%% DATASETS 
 
@@ -81,7 +81,7 @@ params_units['b'] = {'Radial Velocity':                       r'$v \ [\mathrm{m/
 # CORE DATA
 
 params_units['c'] = {'Time':                                  r'$t \ [\mathrm{Myr}]$',
-                     'Inner Core Volume':                     r'$V_i/V_c \ [\%]$',
+                     'Inner Core Volume':                     r'$r_i/r_c \ [\%]$',
                      'CMB Temperature':                       r'$T_c \ [\mathrm{K}]$',
                      'CMB Heat':                              r'$Q_{CMB} \ [\mathrm{TW}]$',
                      'Secular Cooling':                       r'$Q_S \ [\mathrm{TW}]$',
@@ -104,7 +104,7 @@ save_fig        = True
 
 # only used if save_fig is set to True
 #--------------------------------------------------------------------------------
-output_name     = 'M1-2_Fe30-60'
-file_type       = '.png'        # will only effect i, h, and c output.
-plot_dir        = '/scratch/louim95/Plots/' 
+output_name     = 'M1-3_Fe30-60'
+file_type       = '.svg'        # will only effect i, h, and c output.
+plot_dir        = 'D:\\Geodynamo_Core_Simulation\\tc_250924_M1-2_Fe30-60\\Plots\\'
 #--------------------------------------------------------------------------------

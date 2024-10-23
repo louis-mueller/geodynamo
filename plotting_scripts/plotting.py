@@ -6,9 +6,10 @@ Created on Mon Aug 19 15:09:57 2024
 @author: theresabuettner
 """
 
-from input_data import smoothing, show_rawdata, spacing, params_units, save_fig, output_name, file_type, plot_dir
+from input_data import smoothing, show_rawdata, spacing, save_fig, output_name, file_type, plot_dir
+from supp_functions import save_or_show
 from coloring import *
-
+import os.path as path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -17,7 +18,7 @@ from scipy import signal
 
 #%% PLOTTING INPUT DATA
 
-def plot_input(all_data, homedir, comparison, params, params_units):
+def plot_input(all_data, comparison, params, params_units):
     
     foldernames = list(all_data.keys())
     
@@ -182,10 +183,7 @@ def plot_input(all_data, homedir, comparison, params, params_units):
     else:
         plt.tight_layout(pad=2.0)
         
-    if save_fig == True:
-        plt.savefig(plot_dir+output_name+'i'+file_type)
-    else:
-        plt.show()
+    save_or_show(save_fig, plot_dir, output_name+'i', file_type)
 
 #%% PLOTTING HEAT DATA
 
@@ -302,10 +300,7 @@ def plot_heat(all_data, homedir, comparison, params, params_units):
     else:
         plt.tight_layout(pad=2.0)
         
-    if save_fig == True:
-        plt.savefig(plot_dir+output_name+'h'+file_type)
-    else:
-        plt.show()
+    save_or_show(save_fig, plot_dir, output_name+'h', file_type)
 
 
 #%% PLOTTING 2D DATA
@@ -403,10 +398,7 @@ def plot_2D(all_data, homedir, comparison, params, params_units):
                     
         plt.tight_layout(pad=2.0)
         
-        if save_fig == True:
-            plt.savefig(plot_dir+output_name+'b.png')
-        else:
-            plt.show()
+        save_or_show(save_fig, plot_dir, output_name+'b')
     
 
     else: 
@@ -488,10 +480,7 @@ def plot_2D(all_data, homedir, comparison, params, params_units):
             # colorbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
             fig.colorbar(im, ax=ax[:], cmap = colormap[plot], label=params_units['b'][plot])
 
-            if save_fig == True:
-                plt.savefig(plot_dir+output_name+'b.png')
-            else:
-                plt.show()
+            save_or_show(save_fig, plot_dir, output_name+'b')
 
 #%% PLOTTING CORE DATA
 
@@ -581,7 +570,7 @@ def plot_core(all_data, homedir, comparison, params, params_units):
                 if plots[ind] == 'Surface Magnetic Field Strength' or plots[ind] == 'CMB Magnetic Field Strength':
                     yy = np.array(all_data[entry][plots[ind]]) * 1e6
                 
-                if plots[ind] == 'Surface Magnetic Field Strength':
+                if plots[ind] == 'Surface Magnetic Field Strength' and entry == foldernames[0]:
                     ax[it].fill_between(time, 22, 62, color='lightblue', label='Today\'s Suface B-Field', alpha=0.5)
 
                 if count % 2 == 0:
@@ -671,7 +660,4 @@ def plot_core(all_data, homedir, comparison, params, params_units):
                                     chartBox2.width, 
                                     chartBox2.height])
                     
-    if save_fig == True:
-        plt.savefig(plot_dir+output_name+'c'+file_type)
-    else:
-        plt.show()
+    save_or_show(save_fig, plot_dir, output_name+'c', file_type)
