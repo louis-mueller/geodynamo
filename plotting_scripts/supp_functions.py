@@ -31,28 +31,24 @@ def files(data_type):
             filenames.append(entry) 
 
     if 'c' in data_type:
-        filenames.append(core_files) 
+        filenames.append(core_files)  
         
 
 #%% LOGIN 
 
-def login(username, password, hostip):
-    try:
-        global ssh_client  # If you need this to be global; consider alternatives
-        
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        # Attempt to connect
-        ssh_client.connect(hostname=hostip, username=username, password=password)
-        print("Connection successful.")
+def login(): 
+
+    for name in safety:
+        from input_data import name
     
-    except paramiko.SSHException as e:
-        print(f"SSH connection error: {e}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    global ssh_client
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    ssh_client.connect(hostname=hostip, port=10435, username=username, password=password)
     
-    return ssh_client
+    for name in safety:
+        del globals()[name]
 
 #%% FORMAT FOLDERNAMES
 

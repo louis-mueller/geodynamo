@@ -15,15 +15,15 @@ from getpass import getpass
 
 # If you are working locally or on the server, you can leave the strings empty.
 
-hostip        = 'curta.zedat.fu-berlin.de'    # alternatively '130.133.87.145' for Freya
-username      = 'louim95'
-password      = 'Karlsusann3!'
+hostip        = 'thor.planet.fu-berlin.de'    # alternatively '130.133.87.145' for Freya
+username      = 'louismueller'
+password      = 'hi'
 
 safety        = ['username', 'password', 'hostip']
 
 #%% DEFINE CASES
 
-loc = 's'            # Where are you working?
+loc = 'l'            # Where are you working?
                      # l - local  (files are saved locally on the computer you are working locally)
                      # r - remote (files are saved on a remote server and need to be downloaded)
                      # s - server (files are saved on server, and you are working on the server)
@@ -88,7 +88,7 @@ params_units['c'] = {'Time':                                  r'$t \ [\mathrm{My
                      'Latent Heat Release':                   r'$Q_L \ [\mathrm{TW}]$',
                      'CMB Temperature Change':                r'$\Delta T \ [\mathrm{K/Myr}]$',
                      'ICB Radius Change':                     r'$\Delta r \ [\mathrm{m/Myr}]$',
-                     'Thermal Buoyqncy Flux':                 r'$F_T \ [\mathrm{m^2/s^3}]$',
+                     'Thermal Buoyancy Flux':                 r'$F_T \ [\mathrm{m^2/s^3}]$',
                      'Magnetic Moment':                       r'$m \ [\mathrm{A m^2}]$',
                      'CMB Magnetic Field Strength':           r'$B_{CMB} \ [\mathrm{\mu T}]$',
                      'Surface Magnetic Field Strength':       r'$B_{S} \ [\mathrm{\mu T}]$'}
@@ -104,7 +104,7 @@ save_fig        = True
 
 # only used if save_fig is set to True
 #--------------------------------------------------------------------------------
-output_name     = 'M1_Fe30'
+output_name     = 'M1-2_Fe30-60'
 file_type       = '.png'        # will only effect i, h, and c output.
 plot_dir        = '/scratch/louim95/Plots/' 
 #--------------------------------------------------------------------------------

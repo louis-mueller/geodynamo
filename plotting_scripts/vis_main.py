@@ -20,8 +20,8 @@ from vis_functions import *
 # In case you are working locally, specify the folder you want to access in 'local_dir'.
 # In case you are working on the server, specify the folder you want to access in 'server_dir'.       
 
-local_dir    = 'C:\\Users\\louis\\Documents\\geodynamo\\plotting_scripts\\'
-server_dir   = '/scratch/louim95/M1_Fe30_sFe6-5_p/'
+local_dir    = '/scratch/louim95/'
+server_dir   = 'other'
 
 # DATA TYPE
 
@@ -34,7 +34,7 @@ data_type = 'c'      # i - input profiles
 
 # ACCESS TO MULTIPLE FOLDERS
 
-comparison = False    # Do you want to compare and plot data from more than one folder?
+comparison = True    # Do you want to compare and plot data from more than one folder?
 
 #%% GET DATA
 
@@ -87,7 +87,7 @@ params['c'] = {'Time':                                  False,
                'ICB Radius Change':                     False,
                'Thermal Buoyancy Flux':                 True,
                'Magnetic Moment':                       True,
-               'CMB Magnetic Field Strength':           False,
+               'CMB Magnetic Field Strength':           True,
                'Surface Magnetic Field Strength':       True}
 
 plot_data(all_data, data_type, local_dir, server_dir, comparison, params, params_units)

@@ -576,29 +576,28 @@ def plot_core(all_data, homedir, comparison, params, params_units):
                 time = np.array(all_data[entry][list(params_units['c'].keys())[0]])
                 c = count // 2
 
-                yyy = np.array(all_data[entry][plots[ind]])
+                yy = np.array(all_data[entry][plots[ind]])
 
-                if plots[ind] == list(params_units['c'].keys())[10]:
-                    yyy = np.array(all_data[entry][plots[ind]]) * 1e6
-                elif plots[ind] == list(params_units['c'].keys())[11]:
-                    yyy = np.array(all_data[entry][plots[ind]]) * 1e6
-                    if entry == foldernames[0]:
-                        ax[it].fill_between(time, 22, 62, color='lightblue', label='Today\'s Suface B-Field', alpha=0.5)
+                if plots[ind] == 'Surface Magnetic Field Strength' or plots[ind] == 'CMB Magnetic Field Strength':
+                    yy = np.array(all_data[entry][plots[ind]]) * 1e6
+                
+                if plots[ind] == 'Surface Magnetic Field Strength':
+                    ax[it].fill_between(time, 22, 62, color='lightblue', label='Today\'s Suface B-Field', alpha=0.5)
 
                 if count % 2 == 0:
                     a = 0.5
-                    im=ax[it].plot(time, yyy, label=entry, color=colors[c], alpha=a)
+                    im=ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
                 else:
                     a = 1
-                    im=ax[it].plot(time, yyy, label=entry, color=colors[c], alpha=a)
+                    im=ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
                 
                 count = count + 1
             
             ax[it].legend()
                 
             ax[it].set_title(plots[ind])
-            ax[it].set_xlabel(params_units['c']['Time'])
-            ax[it].set_ylabel(params_units['c'][plots[ind]])
+            ax[it].set_xlabel(params_units['c']['Time'], labelpad=10)
+            ax[it].set_ylabel(params_units['c'][plots[ind]], labelpad=10)
             ax[it].set_xlim((0,None))
             ax[it].legend(fontsize=5)
             
@@ -611,6 +610,9 @@ def plot_core(all_data, homedir, comparison, params, params_units):
         
     if nrPlots == 7:
         adjust = [2, 1]
+
+    if nrPlots == 8:
+        plt.subplots_adjust(hspace=0.4, wspace=0.4)
 
     if nrPlots == 9:
         plt.subplots_adjust(hspace=0.4, wspace=0.4)
