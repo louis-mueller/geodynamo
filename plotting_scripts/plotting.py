@@ -575,10 +575,10 @@ def plot_core(all_data, homedir, comparison, params, params_units):
 
                 if count % 2 == 0:
                     a = 0.5
-                    im=ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
+                    ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
                 else:
                     a = 1
-                    im=ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
+                    ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
                 
                 count = count + 1
             
@@ -661,3 +661,4 @@ def plot_core(all_data, homedir, comparison, params, params_units):
                                     chartBox2.height])
                     
     save_or_show(save_fig, plot_dir, output_name+'c', file_type)
+# %%
