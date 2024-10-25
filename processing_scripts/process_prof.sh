@@ -32,7 +32,7 @@ output_pattern="$prof_dir/data_prof_M*"
 save_old_input=0                                            # if greater 0 the edited input is saved as a copy with the correct dir_name
 max_count=1                                                 # change this value for the amount of simulations you would like to process
 plot_output=1                                               # if greater 0 plotting (eg. visu_profs.py) code is run as well
-plot_dir="/home/louismueller/bin/visu_profs.py"             # path to plotting code 
+plot_dir="/home/louismueller/git/geodynamo/plotting_scripts/visu_profs.py"             # path to plotting code 
 OUTPUT_FILE_NAME="sim_IntStruct_${current_date}.svg"        # passed to plotting code 
 
 dir_strs=(
@@ -182,6 +182,7 @@ if [ -f "$prof_dir/input.txt" ]; then
 
             # Check if output file exists and copy it
             if [ -f "$output_file" ]; then
+                cp "$output_file" "$base_dir/$dir_name+prof.res" #the Interior Structure data is saved seperatly in the base directory
                 cp "$output_file" "$output_dir/profs.res" #the Interior Structure data is copied to the correct directory
                 echo "Output file copied to $output_dir/profs.res"
             else
