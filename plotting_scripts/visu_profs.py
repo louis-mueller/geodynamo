@@ -63,7 +63,7 @@ Y_AXIS_LABELS = [
     r'$mat$'
 ]
 
-lbl = [r'1 M  30% Fe', r'1 M  60% Fe', r'2 M  30% Fe', r'2 M  60% Fe', r'3 M  30% Fe',
+LABELS = [r'1 M  30% Fe', r'1 M  60% Fe', r'2 M  30% Fe', r'2 M  60% Fe', r'3 M  30% Fe',
     r'3 M  60% Fe', r'4 M  30% Fe', r'4 M  60% Fe', r'5 M  30% Fe', r'5 M  60% Fe'
 ]
 
@@ -105,7 +105,7 @@ def load_data(directory):
         print(f'Error loading data from {directory}: {e}')
         return None, None, None
 
-def plot_data(axs, sim_dict, DIR_STRS, MAX_COUNT):
+def plot_data(axs, sim_dict, DIR_STRS, MAX_COUNT, LABELS=LABELS):
     '''Plot the data from all directories.'''
     COUNT = 0
     for dir_name in DIR_STRS:
@@ -128,7 +128,7 @@ def plot_data(axs, sim_dict, DIR_STRS, MAX_COUNT):
                 k = i * COLUMS + j
                 if k < len(DATA_TO_LOAD)-1:
                     axs[i, j].plot(radius, data[:, k], color=sim_dict[dir_name][0], linestyle=sim_dict[dir_name][1],
-                                alpha=sim_dict[dir_name][2], label=lbl[COUNT])
+                                alpha=sim_dict[dir_name][2], label=LABELS[COUNT])
                     axs[i, j].set_xlabel('Radius [km]')
                     axs[i, j].set_ylabel(Y_AXIS_LABELS[k])
                     axs[i, j].set_title(TITLES[k])
