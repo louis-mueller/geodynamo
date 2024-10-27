@@ -24,7 +24,7 @@ from vis_functions import *
 # thor local: '/scratch/Simulations_Louis/'
 # ideapad-louis local: 'D:\\Geodynamo_Core_Simulation\\tc_250924_M1-2_Fe30-60\\'  
 
-local_dir    = 'D:\\Geodynamo_Core_Simulation\\tc_250924_M1-2_Fe30-60\\'
+local_dir    = '/scratch/Simulations_Louis/'
 server_dir   = 'other'
 
 # DATA TYPE

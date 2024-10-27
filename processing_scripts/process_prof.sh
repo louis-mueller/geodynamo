@@ -27,7 +27,7 @@ current_date=$(date +"%d%m%Y")
 #--------------------------------------------------------------------------------------
 base_dir="/scratch/Simulations_Louis"
 prof_dir="$base_dir/Prof_perplex"
-chic_executable="$base_dir/CHIC_251024"
+chic_executable="$base_dir/CHIC_271024"
 output_pattern="$prof_dir/data_prof_M*"
 save_old_input=0                                            # if greater 0 the edited input is saved as a copy with the correct dir_name
 max_count=1                                                 # change this value for the amount of simulations you would like to process

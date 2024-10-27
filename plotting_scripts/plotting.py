@@ -500,7 +500,7 @@ def plot_core(all_data, homedir, comparison, params, params_units):
     plt.rcParams['figure.dpi']=500
     plt.figure() 
     
-    nrPlots = len(plots)
+    nrPlots = len(plots) 
     if nrPlots == 1:
         Plx = 1; Ply = 1
         figsize=(5,4)
@@ -543,10 +543,11 @@ def plot_core(all_data, homedir, comparison, params, params_units):
     else:
         print('Number of plots exceeds or undercuts possible number.')
     
-    fig,ax = plt.subplots(Plx,Ply,figsize=figsize)
+    fig,ax = plt.subplots(Plx,Ply,figsize=figsize,sharex=True)
         
     ind = 0
     colors = colorcoding(foldernames)
+    handles, labels = [], []
     
     for i in range(Plx):
         for k in range(Ply):
@@ -561,9 +562,10 @@ def plot_core(all_data, homedir, comparison, params, params_units):
             count = 0
             
             for entry in foldernames:
+                formatted_entry = entry[:7].replace('_', ' ')
+                color_num = int(entry[1])-1
                 
                 time = np.array(all_data[entry][list(params_units['c'].keys())[0]])
-                c = count // 2
 
                 yy = np.array(all_data[entry][plots[ind]])
 
@@ -575,25 +577,36 @@ def plot_core(all_data, homedir, comparison, params, params_units):
 
                 if count % 2 == 0:
                     a = 0.5
-                    ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
+                    ax[it].plot(time, yy, label=formatted_entry, color=colors[color_num], alpha=a)
                 else:
                     a = 1
-                    ax[it].plot(time, yy, label=entry, color=colors[c], alpha=a)
+                    ax[it].plot(time, yy, label=formatted_entry, color=colors[color_num], alpha=a)
                 
                 count = count + 1
-            
-            ax[it].legend()
+
+                h, l = ax[it].get_legend_handles_labels()
+                handles.extend(h)
+                labels.extend(l)
                 
             ax[it].set_title(plots[ind])
-            ax[it].set_xlabel(params_units['c']['Time'], labelpad=10)
+            if it[0] == Ply-1: #bottom row -> because sharex true
+                ax[it].set_xlabel(params_units['c']['Time'], labelpad=10)
             ax[it].set_ylabel(params_units['c'][plots[ind]], labelpad=10)
             ax[it].set_xlim((0,None))
-            ax[it].legend(fontsize=5)
             
             if ind < nrPlots-1:
                 ind = ind + 1
-            
     
+    unique_handles_labels = dict(zip(labels, handles))
+    handles, labels = unique_handles_labels.values(), unique_handles_labels.keys()
+
+    if len(foldernames) < 7:
+        length = len(foldernames)+1
+    else:
+        length = 7
+
+    fig.legend(handles=handles, labels=labels, loc='lower center', ncol=length, fontsize=12)
+            
     if nrPlots == 5:
         adjust = [1, 2]
         
@@ -601,10 +614,13 @@ def plot_core(all_data, homedir, comparison, params, params_units):
         adjust = [2, 1]
 
     if nrPlots == 8:
-        plt.subplots_adjust(hspace=0.4, wspace=0.4)
+        plt.subplots_adjust(hspace=0.3, wspace=0.3)
 
     if nrPlots == 9:
-        plt.subplots_adjust(hspace=0.4, wspace=0.4)
+        plt.subplots_adjust(hspace=0.3, wspace=0.3)
+
+    if nrPlots == 10:
+        plt.subplots_adjust(hspace=0.3, wspace=0.3)
         
     if nrPlots == 11:
         adjust = [3, 2]
