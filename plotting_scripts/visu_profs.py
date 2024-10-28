@@ -38,6 +38,15 @@ OPACITY = [0.5, 1]                          # considers changes in the Iron valu
 GRID = False                                # Grid on or off                                 
 # -----------------------------------------------------------------------------
 
+def Directory_Names():
+    profs = [
+        'M1_Fe30_sFe6-5_p', 'M1_Fe60_sFe6-5_p', 'M2_Fe30_sFe6-5_p',
+        'M2_Fe60_sFe6-5_p', 'M3_Fe30_sFe6-5_p', 'M3_Fe60_sFe6-5_p',
+        'M4_Fe30_sFe6-5_p', 'M4_Fe60_sFe6-5_p', 'M5_Fe30_sFe6-5_p',
+        'M5_Fe60_sFe6-5_p'
+    ]
+    return profs
+
 # Color range (normalized) 
 cmap = mpl.colormaps['viridis_r']
 COLOR_PALETTE = cmap(np.linspace(0,1,5))
@@ -63,8 +72,8 @@ Y_AXIS_LABELS = [
     r'$mat$'
 ]
 
-LABELS = [r'1 M  30% Fe', r'1 M  60% Fe', r'2 M  30% Fe', r'2 M  60% Fe', r'3 M  30% Fe',
-    r'3 M  60% Fe', r'4 M  30% Fe', r'4 M  60% Fe', r'5 M  30% Fe', r'5 M  60% Fe'
+LABELS = ['M1  CMF30', 'M1 CMF60', 'M2 CMF30', 'M2 CMF60', 'M3 CMF30', 'M3 CMF60', 'M4 CMF30', 
+          'M4 CMF60', 'M5 CMF30', 'M5 CMF60'
 ]
 
 def configure_simulation_dictionary(DIR_STRS, MAX_COUNT):
@@ -105,9 +114,10 @@ def load_data(directory):
         print(f'Error loading data from {directory}: {e}')
         return None, None, None
 
-def plot_data(axs, sim_dict, DIR_STRS, MAX_COUNT, LABELS=LABELS):
+def plot_data(fig, axs, sim_dict, DIR_STRS, MAX_COUNT, LABELS=LABELS):
     '''Plot the data from all directories.'''
     COUNT = 0
+    handles, labels = [], []
     for dir_name in DIR_STRS:
         if COUNT > MAX_COUNT:
             break
@@ -127,14 +137,33 @@ def plot_data(axs, sim_dict, DIR_STRS, MAX_COUNT, LABELS=LABELS):
             for j in range(COLUMS):
                 k = i * COLUMS + j
                 if k < len(DATA_TO_LOAD)-1:
-                    axs[i, j].plot(radius, data[:, k], color=sim_dict[dir_name][0], linestyle=sim_dict[dir_name][1],
+                    axs[i,j].plot(radius, data[:, k], color=sim_dict[dir_name][0], linestyle=sim_dict[dir_name][1],
                                 alpha=sim_dict[dir_name][2], label=LABELS[COUNT])
-                    axs[i, j].set_xlabel('Radius [km]')
-                    axs[i, j].set_ylabel(Y_AXIS_LABELS[k])
-                    axs[i, j].set_title(TITLES[k])
-                    axs[i, j].grid(GRID)
+                    if i == ROWS-1:
+                        axs[i,j].set_xlabel('Radius [km]')
+                    axs[i,j].set_ylabel(Y_AXIS_LABELS[k])
+                    axs[i,j].set_title(TITLES[k])
+                    axs[i,j].grid(GRID)
+                    h, l = axs[i,j].get_legend_handles_labels()
+                    handles.extend(h)
+                    labels.extend(l)
    
         COUNT += 1
+    if ADD_PREM:
+        add_prem(n,axs,handles,labels)
+    remove_empty_subplots(fig)
+    unique_handles_labels = dict(zip(labels, handles))
+    handles, labels = unique_handles_labels.values(), unique_handles_labels.keys()
+
+    if len(DIR_STRS) < 6 and ADD_PREM:
+        length = len(DIR_STRS)+1
+    elif len(DIR_STRS) < 6:
+        length = len(DIR_STRS)
+    else:
+        length = 6
+
+    fig.legend(handles=handles, labels=labels, loc='lower center', ncol=length, fontsize=10)
+    plt.subplots_adjust(hspace=0.3, wspace=0.3)
         
 def remove_empty_subplots(fig):
     '''Remove empty subplots from a matplotlib figure.'''
@@ -149,7 +178,7 @@ def remove_empty_subplots(fig):
             ax.remove()
             print(f'Axis {index} was not used and therefore removed from the figure.')
 
-def add_prem(n,axs,sim_dict):
+def add_prem(n,axs,handles,labels):
     '''Prem load [columns left to right: radius(m),density(kg/m^3),
     Vpv(m/s),Vsv(m/s),Q-kappa,Q-mu,Vph(m/s),Vsh(m/s),eta]'''
     
@@ -183,7 +212,9 @@ def add_prem(n,axs,sim_dict):
     P = (P-P[-1])/1e9 # [GPa]
     axs[0,0].plot(r/1000,g,color=COLOR_PALETTE_TEST[0],linestyle='dashed',alpha=0.5)
     axs[ROWS-1,2].plot(0,0,color=COLOR_PALETTE_TEST[0],linestyle='dashed',alpha=0.5,label='PREM')
-    axs[ROWS-1,2].legend(fontsize='small')
+    h, l = axs[ROWS-1,2].get_legend_handles_labels()
+    handles.extend(h)
+    labels.extend(l)
 
     if COLUMS >= 2:
         axs[0,1].plot(r/1000,P,color=COLOR_PALETTE_TEST[0],linestyle='dashed',alpha=0.5)
@@ -194,13 +225,8 @@ def main(DIR_STRS, OUTPUT_FILE_NAME, MAX_COUNT):
     '''Main function to configure and plot data.'''
 
     sim_dict = configure_simulation_dictionary(DIR_STRS, MAX_COUNT)
-    fig, axs = plt.subplots(nrows=ROWS, ncols=COLUMS, figsize=(COLUMS*SCALE_FACTOR, ROWS*SCALE_FACTOR))
-    plot_data(axs, sim_dict, DIR_STRS, MAX_COUNT)
-    if ADD_PREM:
-        add_prem(n,axs,sim_dict)
-    remove_empty_subplots(fig)
-    plt.tight_layout()
-    plt.legend(fontsize='small')
+    fig, axs = plt.subplots(nrows=ROWS, ncols=COLUMS, figsize=(COLUMS*SCALE_FACTOR, ROWS*SCALE_FACTOR), sharex=True)
+    plot_data(fig, axs, sim_dict, DIR_STRS, MAX_COUNT)
     
     # Ensure the "Plots" directory exists and save the SVG file there
     PLOTS_DIR = os.path.join(os.getcwd(), 'Plots')
@@ -214,11 +240,17 @@ def main(DIR_STRS, OUTPUT_FILE_NAME, MAX_COUNT):
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         print("Usage should be: python3 visu_profs.py <DIR_STRS> <OUTPUT_FILE_NAME> <MAX_COUNT>")
-        sys.exit(1)
-
-    DIR_STRS = sys.argv[1]
-    DIR_STRS = DIR_STRS.split(',')
-    OUTPUT_FILE_NAME = sys.argv[2]
-    MAX_COUNT = int(sys.argv[3])
+        print("Example values used for testing.")
+        DIR_STRS = Directory_Names()
+        OUTPUT_FILE_NAME = 'int_struct_test.svg'
+        MAX_COUNT = 10
+        print(f'Directory names: {DIR_STRS}')
+        print(f'Output file name: {OUTPUT_FILE_NAME}')
+        print(f'Maximum count: {MAX_COUNT}')
+    else:
+        DIR_STRS = sys.argv[1]
+        DIR_STRS = DIR_STRS.split(',')
+        OUTPUT_FILE_NAME = sys.argv[2]
+        MAX_COUNT = int(sys.argv[3])
     
     main(DIR_STRS, OUTPUT_FILE_NAME, MAX_COUNT)
