@@ -24,7 +24,7 @@ from vis_functions import *
 # thor local: '/scratch/Simulations_Louis/'
 # ideapad-louis local: 'D:\\Geodynamo_Core_Simulation\\tc_250924_M1-2_Fe30-60\\'  
 
-local_dir    = '/scratch/Simulations_Louis/'
+local_dir    = '/scratch/louim95/'
 server_dir   = 'other'
 
 # DATA TYPE
@@ -82,7 +82,7 @@ params['b'] = {'Radial Velocity':                       True,
 
 # CORE DATA
 params['c'] = {'Time':                                  False,    
-               'Inner Core Volume':                     True,
+               'Inner Core Radius':                     True,
                'CMB Temperature':                       True,
                'CMB Heat':                              True,
                'Secular Cooling':                       True,

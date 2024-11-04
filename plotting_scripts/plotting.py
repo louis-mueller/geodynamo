@@ -563,11 +563,15 @@ def plot_core(all_data, homedir, comparison, params, params_units):
             
             for entry in foldernames:
                 formatted_entry = entry[:7].replace('_', ' ')
+                formatted_entry = formatted_entry.replace('Fe','CMF')
                 color_num = int(entry[1])-1
                 
                 time = np.array(all_data[entry][list(params_units['c'].keys())[0]])
 
                 yy = np.array(all_data[entry][plots[ind]])
+
+                if plots[ind] == 'Inner Core Radius':
+                    yy = (np.array(all_data[entry][plots[ind]])/100)**(1/3)*100 # current fix (1.11.24) to depict radius instead of volume.
 
                 if plots[ind] == 'Surface Magnetic Field Strength' or plots[ind] == 'CMB Magnetic Field Strength':
                     yy = np.array(all_data[entry][plots[ind]]) * 1e6
