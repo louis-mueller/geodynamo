@@ -104,7 +104,7 @@ save_fig        = True
 
 # only used if save_fig is set to True
 #--------------------------------------------------------------------------------
-output_name     = 'M1-2_Fe30-60'
+output_name     = 'M1-4_Fe30-60'
 file_type       = '.svg'        # will only effect i, h, and c output.
-plot_dir        = '/scratch/louim95/Plots/'
+plot_dir        = 'D:\\Geodynamo_Core_Simulation\\tc_251024_M1-4_Fe30-60\\Plots\\'
 #--------------------------------------------------------------------------------
