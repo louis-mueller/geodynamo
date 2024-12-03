@@ -604,10 +604,10 @@ def plot_core(all_data, homedir, comparison, params, params_units):
     unique_handles_labels = dict(zip(labels, handles))
     handles, labels = unique_handles_labels.values(), unique_handles_labels.keys()
 
-    if len(foldernames) < 7:
+    if len(foldernames) < 6:
         length = len(foldernames)+1
     else:
-        length = 7
+        length = 6
 
     fig.legend(handles=handles, labels=labels, loc='lower center', ncol=length, fontsize=12)
             

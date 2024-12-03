@@ -1,0 +1,99 @@
+Study,Age (Ma),Magnetic Moment [A m2],Error [A m2],1 sigma,Study Area / Unit,Type,Method,MD (multi domain grains present),Comments
+Huang et al. 2024,2054,8.04E+22,4E+21,,Bushveld,PDM,SCP,,slow cooling
+Huang et al. 2024,591.2,2.5E+21,2E+20,,Brazil,PDM,SCP,,slow cooling
+Cottrell et al. 1999,0,8.2E+22,5.6498E+22,0.4,"Hawaiian lava, 1955 flow",PDM/VDM,SCP plag,no,not time averaged
+Tardunno et al. 2005,56,9E+22,2.7E+20,3,ODP Site 1205 basalt,PDM/VDM,SCP plag,no,directional angular dispersion data.
+Tardunno et al. 2002,95,1.27E+23,6.1468E+22,0.7,Strand Fiord volcanics,PDM/VDM,SCP plag,no,directional angular dispersion data.
+Tarduno et al. 2001,115,1.25E+23,2.025E+22,1.4,Rajmahal Traps basalts,PDM/VDM,SCP plag,no,directional angular dispersion data.
+Tardunno et al. 2005,160,4.1E+22,3.1324E+22,0.3,ODP Site 801 basalt,PDM/VDM,SCP plag,no,not time averaged
+Cottrell et al. 2008,266,8.9E+22,4.8861E+22,0.6,Kiama lavas,PDM/VDM,SCP plag,no,not time averaged
+Shcherbakova et al. 2017,379,1.1E+22,6.787E+21,0.5,Kola Peninsula basalts,PDM/VDM,WR (whole rock),yes,not time averaged
+Shcherbakova et al. 2017,386,3.1E+22,2.79E+20,2.6,Minusa Basin basalts,PDM/VDM,WR,yes,not time averaged
+Bono et al. 2019,565,6E+21,3.702E+21,0.5,Sept-Ilesanorthosite,PDM,"SCP plag, cpx",no,
+Yu et al. 2002,850,1.8E+22,1.2402E+22,0.4,Cordova Gabbro,PDM,WR,yes,
+Yu et al. 2002,1000,3.1E+22,2.1359E+22,0.4,Cordova Gabbro,PDM,WR,yes,
+Donadini et al. 2011,1786,4.3E+22,1.204E+21,2.2,Hoting gabbro,PDM,WR,yes,Value without cooling rate correction because of evidence for PSD grains
+Shcherbakova et al. 2006,1854,7.1E+22,4.3807E+22,0.5,Shumikhinskii granites,PDM,WR,yes,Value without cooling rate correction because of evidence for PSD grains
+Selkin et al. 2008,2744,5E+22,6.7E+21,1.5,Stillwater anorthosites,PDM,WR,yes,MD influence minimized by rock type (magnetization dominated by silicate hosted magnetic inclusions)
+Muxworthy et al. 2013,2784,6.3E+22,1.449E+22,1.2,Modipe Gabbro,PDM,WR,yes,"MD influence minimized by rock type (magnetization dominated by silicate hosted magnetic inclusions), Minimum value (dipole moment) because of no tilt correction."
+Tardunno et al. 2007,3215,7.5E+22,1.725E+22,1.2,Dalmein granite pluton,PDM,"SCP, qtz, mc",no,Value without cooling rate correction because of evidence for PSD grains
+Tardunno et al. 2007,3227,6.4E+22,2.304E+21,2.1,Kaapvaal Valley granite pluton,PDM,"SCP, qtz, mc",no,Value without cooling rate correction because of evidence for PSD grains
+Tarduna et al. 2010,3451,5.8E+22,2.1344E+22,0.9,Barberton Greenstone Belt dacite,PDM,SCP quartz,no,
+Kulakov et al. 2013,1087,5.9E+22,1.5989E+22,1.1,Lake Shore Traps basalts,PDM/VDM,WR,yes,
+Donadini et al. 2011,1145,2.6E+22,1.1024E+22,0.8,Central Arizona diabase sills,PDM/VDM,WR,yes,directional angular dispersion data. Value may not fully average field variation.
+Macouin et al. 2006,1257,2.4E+22,1.4808E+22,0.5,Mackenzie dikes,PDM/VDM,WR,yes,not time averaged
+Shcherbakova et al. 2008,1450,3.4E+22,1.8666E+22,0.6,Lake Ladoga dolerite dikes,PDM/VDM,WR,yes,not time averaged
+Shcherbakova et al. 2006,1460,1.4E+22,4.438E+21,1,Salmi basalt flows,PDM/VDM,WR,yes,not time averaged
+Valet et al. 2014,2367,1.3E+22,4.784E+21,0.9,Dharwar mafic dikes,PDM/VDM,WR,yes,not time averaged
+Smirnov et al. 2015,2411,6.8E+22,2.1556E+22,1,Widgiemooltha mafic dikes,PDM/VDM,WR,yes,directional angular dispersion data
+Smirnov et al. 2003,2449,8.2E+22,7.298E+21,1.7,Burakovka mafic dikes,PDM/VDM,SCP plag,no,not time averaged
+Yoshihara et al. 2000,2631,7.5E+22,4.275E+21,1.9,"8a dikes, Slave Province diabase dikes",PDM/VDM,WR,yes,"not time averaged, Calculated using mean inclination of 5 dikes samples in the study."
+Tarduna et al. 2010,3409,3.8E+22,2.6182E+22,0.4,Nondweni Greenstone Belt dacite,PDM/VDM,SCP qtz,no,not time averaged
+Lloyd et al. 2021,720,9E+21,9E+21,,,VDM,Thellier,,
+Shcherbakova et al. 2020,561,9.7E+21,3.4E+21,,,VDM,Thellier,,
+Shcherbakova et al. 2020,561,1.03E+22,1.9E+21,,,VDM,Thellier,,
+Shcherbakova et al. 2020,561,9.5E+21,2.7E+21,,,VDM,Thellier,,
+Shcherbakova et al. 2020,580,5.2E+21,2.3E+21,,,VDM,Thellier,,
+Thallner et al. 2021,550,1.5E+22,1E+21,,,VDM,Thellier,,
+Lloyd et al. 2021,720,1E+22,2E+21,,,VDM,Microwave,,
+Thallner et al. 2021,584,6E+21,1E+21,,,VDM,Microwave,,
+Thallner et al. 2021,598,4E+21,2E+21,,,VDM,Microwave,,
+Thallner et al. 2021,587,7E+21,2E+21,,,VDM,Microwave,,
+Thallner et al. 2021,585,8E+21,2E+21,,,VDM,Microwave,,
+Shcherbakova et al. 2020,561,1.05E+22,2.7E+21,,,VDM,Microwave,,
+Shcherbakova et al. 2020,561,1.1E+22,5E+20,,,VDM,Microwave,,
+Thallner et al. 2021,550,2E+22,9E+21,,,VDM,Microwave,,
+Lloyd et al. 2021,720,1.2E+22,8E+21,,,VDM,Shaw,,
+Thallner et al. 2021,587,8E+21,3E+21,,,VDM,Shaw,,
+Thallner et al. 2021,585,8E+21,1E+21,,,VDM,Shaw,,
+Thallner et al. 2021,550,1.1E+22,8E+21,,,VDM,Shaw,,
+Shcherbakova et al. 2020,561,9E+21,2.8E+21,,,VDM,Wilson,,
+Shcherbakova et al. 2020,561,9.5E+21,1E+21,,,VDM,Wilson,,
+Shcherbakova et al. 2020,561,1.3E+22,2.2E+21,,,VDM,Wilson,,
+Shcherbakova et al. 2020,580,5.7E+21,1.8E+21,,,VDM,Wilson,,
+Bono et al. 2019,565,6.7E+21,2.7E+21,,,PDM,Thellier,,
+Zhou et al. 2022,532,3.5E+22,9E+21,,,PDM,Thellier,,
+Tarduno et al. 2015,3486,4.75818E+22,9.30948E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3548,7.55102E+22,1.29298E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3380,7.60274E+22,1.44814E+22,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3588,4.60302E+22,8.01649E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3406,3.25832E+22,1.29298E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3396,1.06025E+22,2.06877E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3482,1.57744E+22,2.58597E+20,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3411,1.03439E+22,1.03439E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3401,2.37909E+22,7.7579E+20,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3499,2.04291E+22,2.58597E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3656,9.05088E+21,1.03439E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3387,2.45667E+22,4.91334E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3418,3.74965E+22,6.46492E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3457,1.29298E+22,1.29298E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3387,1.06025E+22,1.29298E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3401,9.30948E+21,7.7579E+20,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3618,9.30948E+21,1.55158E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3563,1.11197E+22,5.17193E+20,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3391,5.01677E+22,3.10316E+21,,,PDM,Thellier - Coe,,
+Tarduno et al. 2015,3376,2.09463E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3498,3.62035E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3395,1.70674E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3426,2.14635E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,4114,1.08611E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3354,1.06025E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3397,1.96533E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3446,3.69793E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3876,1.65502E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3395,6.90453E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,4017,4.96505E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,4224,3.31004E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3390,2.92214E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3487,5.27537E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3388,1.474E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3391,5.94772E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,4031,8.22337E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3577,2.37909E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3556,3.0773E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3258,7.70618E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3500,1.08611E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3809,2.79284E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3523,1.96533E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3877,2.97386E+22,0,,,PDM,565°C,,
+Tarduno et al. 2015,3344,3.25832E+22,0,,,PDM,565°C,,
